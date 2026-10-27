@@ -191,6 +191,20 @@ func (a *App) RegisterUser(username, email, password string) error {
 		return errors.Wrap(err, "Unable to create the new user")
 	}
 
+	// The first account becomes the workspace administrator.
+	adminID := a.systemAdminID()
+	if adminID == "" {
+		count, countErr := a.store.GetRegisteredUserCount()
+		if countErr == nil && count == 1 {
+			created, lookupErr := a.store.GetUserByUsername(username)
+			if lookupErr == nil && created != nil {
+				if setErr := a.store.SetSystemSetting(model.SystemAdminUserIDKey, created.ID); setErr != nil {
+					return errors.Wrap(setErr, "unable to assign the administrator")
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

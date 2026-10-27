@@ -3,16 +3,12 @@
 exports[`components/content/TextElement return a textElement 1`] = `
 <div>
   <div
-    class="TextElement"
+    class="MarkdownEditor octo-editor  "
   >
     <div
-      class="MarkdownEditor octo-editor  "
-    >
-      <div
-        class="octo-editor-preview octo-placeholder"
-        data-testid="preview-element"
-      />
-    </div>
+      class="octo-editor-preview octo-placeholder"
+      data-testid="preview-element"
+    />
   </div>
 </div>
 `;

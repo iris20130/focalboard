@@ -148,6 +148,7 @@ const TableRow = (props: Props) => {
     return (
         <div
             className={className}
+            data-card-id={card.id}
             onClick={onClick}
             ref={cardRef}
             style={{opacity: isDragging ? 0.5 : 1}}

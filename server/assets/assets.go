@@ -10,3 +10,10 @@ import (
 //
 //go:embed templates.boardarchive
 var DefaultTemplatesArchive []byte
+
+// DefaultTemplatesArchiveZH is the Simplified Chinese copy of the default
+// templates. Only interface-visible strings are translated; card bodies are
+// kept in English. Generated with `make templates-archive-zh`.
+//
+//go:embed templates-zh.boardarchive
+var DefaultTemplatesArchiveZH []byte

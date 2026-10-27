@@ -54,10 +54,20 @@ interface UserPreference {
     value: any
 }
 
+interface AdminUser {
+    id: string
+    username: string
+    email: string
+    createAt: number
+    isAdmin: boolean
+    isSelf: boolean
+}
+
 export {
     IUser,
     UserWorkspace,
     UserConfigPatch,
     parseUserProps,
     UserPreference,
+    AdminUser,
 }

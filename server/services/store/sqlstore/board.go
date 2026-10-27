@@ -243,6 +243,7 @@ func (s *SQLStore) getBoardsForUserAndTeam(db sq.BaseRunner, userID, teamID stri
 		Where(sq.Eq{"b.team_id": teamID}).
 		Where(sq.Eq{"b.is_template": false})
 
+	// All board members can read the boards they belong to or public boards.
 	if includePublicBoards {
 		query = query.Where(sq.Or{
 			sq.Eq{"b.type": model.BoardTypeOpen},

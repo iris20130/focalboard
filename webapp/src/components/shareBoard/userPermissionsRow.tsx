@@ -55,6 +55,12 @@ const UserPermissionsRow = (props: Props): JSX.Element => {
             ref={menuWrapperRef}
         >
             <div className='user-item__content'>
+                {Utils.isFocalboardPlugin() &&
+                    <img
+                        src={Utils.getProfilePicture(user.id)}
+                        className='user-item__img'
+                    />
+                }
                 <div className='ml-3'>
                     <strong>{Utils.getUserDisplayName(user, teammateNameDisplay)}</strong>
                     <strong className='ml-2 text-light'>{`@${user.username}`}</strong>

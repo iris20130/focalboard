@@ -196,12 +196,22 @@ const FilterEntry = (props: Props): JSX.Element => {
                             />
                             <Menu.Text
                                 id='isBefore'
-                                name={intl.formatMessage({id: 'Filter.isbefore', defaultMessage: 'is before'})}
+                                name={intl.formatMessage({id: 'Filter.is-before', defaultMessage: 'is before'})}
                                 onClick={(id) => props.conditionClicked(id, filter)}
                             />
                             <Menu.Text
                                 id='isAfter'
-                                name={intl.formatMessage({id: 'Filter.isafter', defaultMessage: 'is after'})}
+                                name={intl.formatMessage({id: 'Filter.is-after', defaultMessage: 'is after'})}
+                                onClick={(id) => props.conditionClicked(id, filter)}
+                            />
+                            <Menu.Text
+                                id='isWithinDays'
+                                name={intl.formatMessage({id: 'Filter.is-within-days', defaultMessage: 'is due within'})}
+                                onClick={(id) => props.conditionClicked(id, filter)}
+                            />
+                            <Menu.Text
+                                id='isOverdue'
+                                name={intl.formatMessage({id: 'Filter.is-overdue', defaultMessage: 'is overdue'})}
                                 onClick={(id) => props.conditionClicked(id, filter)}
                             />
                         </>}

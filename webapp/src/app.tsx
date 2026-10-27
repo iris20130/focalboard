@@ -11,7 +11,6 @@ import TelemetryClient from './telemetry/telemetryClient'
 
 import {getMessages} from './i18n'
 import {FlashMessages} from './components/flashMessages'
-import NewVersionBanner from './components/newVersionBanner'
 import {Utils} from './utils'
 import {fetchMe, getMe} from './store/users'
 import {getLanguage, fetchLanguage} from './store/language'
@@ -51,7 +50,6 @@ const App = (props: Props): JSX.Element => {
                 <FlashMessages milliseconds={2000}/>
                 <div id='frame'>
                     <div id='main'>
-                        <NewVersionBanner/>
                         <FocalboardRouter history={props.history}/>
                     </div>
                 </div>

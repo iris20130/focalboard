@@ -10,6 +10,10 @@ const (
 	GlobalTeamID                  = "0"
 	SystemUserID                  = "system"
 	PreferencesCategoryFocalboard = "focalboard"
+
+	// SystemAdminUserIDKey stores the user ID of the first registered account,
+	// which acts as the workspace administrator.
+	SystemAdminUserIDKey = "systemAdminUserID"
 )
 
 // User is a user

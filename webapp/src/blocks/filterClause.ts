@@ -10,7 +10,8 @@ type FilterCondition =
     'contains' | 'notContains' |
     'startsWith' | 'notStartsWith' |
     'endsWith' | 'notEndsWith' |
-    'isBefore' | 'isAfter'
+    'isBefore' | 'isAfter' |
+    'isWithinDays' | 'isOverdue'
 
 type FilterClause = {
     propertyId: string

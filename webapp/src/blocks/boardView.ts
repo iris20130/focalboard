@@ -16,6 +16,7 @@ type BoardViewFields = {
     viewType: IViewType
     groupById?: string
     dateDisplayPropertyId?: string
+    dateDisplayPropertyIds?: string[]
     sortOptions: ISortOption[]
     visiblePropertyIds: string[]
     visibleOptionIds: string[]
@@ -41,6 +42,7 @@ function createBoardView(block?: Block): BoardView {
             viewType: block?.fields.viewType || 'board',
             groupById: block?.fields.groupById,
             dateDisplayPropertyId: block?.fields.dateDisplayPropertyId,
+            dateDisplayPropertyIds: block?.fields.dateDisplayPropertyIds?.slice(),
             sortOptions: block?.fields.sortOptions?.map((o: ISortOption) => ({...o})) || [],
             visiblePropertyIds: block?.fields.visiblePropertyIds?.slice() || [],
             visibleOptionIds: block?.fields.visibleOptionIds?.slice() || [],

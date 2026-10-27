@@ -6,7 +6,6 @@ import {FormattedMessage, useIntl} from 'react-intl'
 import {useRouteMatch, useHistory} from 'react-router-dom'
 
 import Workspace from '../../components/workspace'
-import VersionMessage from '../../components/messages/versionMessage'
 import octoClient from '../../octoClient'
 import {Subscription, WSClient} from '../../wsclient'
 import {Utils} from '../../utils'
@@ -37,15 +36,13 @@ import {updateComments} from '../../store/comments'
 import {updateAttachments} from '../../store/attachments'
 import {updateContents} from '../../store/contents'
 import {
+    fetchUserBlockSubscriptions,
     getMe,
     followBlock,
     unfollowBlock,
 } from '../../store/users'
 import {setGlobalError} from '../../store/globalError'
 import {UserSettings} from '../../userSettings'
-
-import IconButton from '../../widgets/buttons/iconButton'
-import CloseIcon from '../../widgets/icons/close'
 
 import TelemetryClient, {TelemetryActions, TelemetryCategory} from '../../telemetry/telemetryClient'
 
@@ -64,6 +61,7 @@ import './boardPage.scss'
 type Props = {
     readonly?: boolean
     new?: boolean
+    adminReadonly?: boolean
 }
 
 const BoardPage = (props: Props): JSX.Element => {
@@ -72,7 +70,6 @@ const BoardPage = (props: Props): JSX.Element => {
     const activeViewId = useAppSelector(getCurrentViewId)
     const dispatch = useAppDispatch()
     const match = useRouteMatch<{boardId: string, viewId: string, cardId?: string, teamId?: string}>()
-    const [mobileWarningClosed, setMobileWarningClosed] = useState(UserSettings.mobileWarningClosed)
     const teamId = match.params.teamId || UserSettings.lastTeamId || Constants.globalTeamId
     const viewId = match.params.viewId
     const me = useAppSelector<IUser|null>(getMe)
@@ -85,6 +82,17 @@ const BoardPage = (props: Props): JSX.Element => {
     // redirect to the new URL schema equivalent
     if (Utils.isFocalboardLegacy() && !props.readonly) {
         window.location.href = window.location.href.replace('/plugins/focalboard', '/boards')
+    }
+
+    // Load user's block subscriptions when workspace changes
+    // block subscriptions are relevant only in plugin mode.
+    if (Utils.isFocalboardPlugin()) {
+        useEffect(() => {
+            if (!me) {
+                return
+            }
+            dispatch(fetchUserBlockSubscriptions(me!.id))
+        }, [me?.id])
     }
 
     // TODO: Make this less brittle. This only works because this is the root render function
@@ -169,15 +177,15 @@ const BoardPage = (props: Props): JSX.Element => {
 
     const onConfirmJoin = async () => {
         if (me) {
-            joinBoard(me, teamId, match.params.boardId, true)
             setShowJoinBoardDialog(false)
+            await joinBoard(me, teamId, match.params.boardId, true)
         }
     }
 
     const joinBoard = async (myUser: IUser, boardTeamId: string, boardId: string, allowAdmin: boolean) => {
         const member = await octoClient.joinBoard(boardId, allowAdmin)
         if (!member) {
-            if (myUser.permissions?.find((s) => s === 'manage_system' || s === 'manage_team')) {
+            if (!allowAdmin && myUser.permissions?.find((s) => s === 'manage_system' || s === 'manage_team')) {
                 setShowJoinBoardDialog(true)
                 return
             }
@@ -287,26 +295,6 @@ const BoardPage = (props: Props): JSX.Element => {
                     <SetWindowTitleAndIcon/>
                     <UndoRedoHotKeys/>
                     <WebsocketConnection/>
-                    <VersionMessage/>
-
-                    {!mobileWarningClosed &&
-                        <div className='mobileWarning'>
-                            <div>
-                                <FormattedMessage
-                                    id='Error.mobileweb'
-                                    defaultMessage='Mobile web support is currently in early beta. Not all functionality may be present.'
-                                />
-                            </div>
-                            <IconButton
-                                onClick={() => {
-                                    UserSettings.mobileWarningClosed = true
-                                    setMobileWarningClosed(true)
-                                }}
-                                icon={<CloseIcon/>}
-                                title='Close'
-                                className='margin-right'
-                            />
-                        </div>}
 
                     {props.readonly && activeBoardId === undefined &&
                         <div className='error'>
@@ -319,6 +307,7 @@ const BoardPage = (props: Props): JSX.Element => {
                         (!props.readonly || activeBoardId !== undefined) &&
                         <Workspace
                             readonly={props.readonly || false}
+                            contentReadonly={props.adminReadonly || false}
                         />
                     }
                 </div>

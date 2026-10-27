@@ -3,6 +3,7 @@
 import {DateUtils} from 'react-day-picker'
 
 import {DateProperty} from './properties/date/date'
+import {getCardDueStatus} from './properties/dueStatus/utils'
 
 import {IPropertyTemplate} from './blocks/board'
 import {Card} from './blocks/card'
@@ -11,6 +12,7 @@ import {FilterGroup, isAFilterGroupInstance} from './blocks/filterGroup'
 import {Utils} from './utils'
 
 const halfDay = 12 * 60 * 60 * 1000
+const dayMillis = 24 * 60 * 60 * 1000
 
 class CardFilter {
     static createDatePropertyFromString(initialValue: string): DateProperty {
@@ -72,6 +74,29 @@ class CardFilter {
             value = card.title.toLowerCase()
         }
         const template = templates.find((o) => o.id === filter.propertyId)
+
+        if (template?.type === 'dueStatus') {
+            const status = getCardDueStatus(card, templates).id
+            switch (filter.condition) {
+            case 'includes':
+                if (filter.values.length < 1) {
+                    return true
+                }
+                return filter.values.includes(status)
+            case 'notIncludes':
+                if (filter.values.length < 1) {
+                    return true
+                }
+                return !filter.values.includes(status)
+            case 'isEmpty':
+                return status === 'none'
+            case 'isNotEmpty':
+                return status !== 'none'
+            default:
+                return true
+            }
+        }
+
         let dateValue: DateProperty | undefined
         if (template?.type === 'date') {
             dateValue = this.createDatePropertyFromString(value as string)
@@ -216,6 +241,34 @@ class CardFilter {
                 return dateValue.from ? dateValue.from > numericFilter : false
             }
             return false
+        }
+        case 'isOverdue': {
+            if (!dateValue?.from) {
+                return false
+            }
+            const due = new Date(dateValue.from + (dateValue.includeTime ? 0 : new Date(dateValue.from).getTimezoneOffset() * 60 * 1000))
+            due.setHours(0, 0, 0, 0)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            return due.getTime() < today.getTime()
+        }
+        case 'isWithinDays': {
+            if (filter.values.length === 0) {
+                return true
+            }
+            if (!dateValue?.from) {
+                return false
+            }
+            const days = parseInt(filter.values[0], 10)
+            if (Number.isNaN(days)) {
+                return true
+            }
+            const due = new Date(dateValue.from + (dateValue.includeTime ? 0 : new Date(dateValue.from).getTimezoneOffset() * 60 * 1000))
+            due.setHours(0, 0, 0, 0)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const diffDays = Math.round((due.getTime() - today.getTime()) / dayMillis)
+            return diffDays >= 0 && diffDays <= days
         }
 
         default: {

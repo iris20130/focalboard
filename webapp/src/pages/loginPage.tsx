@@ -24,11 +24,7 @@ const LoginPage = () => {
         const logged = await client.login(username, password)
         if (logged) {
             await dispatch(fetchMe())
-            if (queryParams) {
-                history.push(queryParams.get('r') || '/')
-            } else {
-                history.push('/')
-            }
+            history.push(queryParams.get('r') || '/')
         } else {
             setErrorMessage('Login failed')
         }
@@ -55,7 +51,7 @@ const LoginPage = () => {
                 <div className='username'>
                     <input
                         id='login-username'
-                        placeholder={'Enter username'}
+                        placeholder={'请输入用户名'}
                         value={username}
                         onChange={(e) => {
                             setUsername(e.target.value)
@@ -67,7 +63,7 @@ const LoginPage = () => {
                     <input
                         id='login-password'
                         type='password'
-                        placeholder={'Enter password'}
+                        placeholder={'请输入密码'}
                         value={password}
                         onChange={(e) => {
                             setPassword(e.target.value)

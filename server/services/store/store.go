@@ -64,6 +64,10 @@ type Store interface {
 	UpdateUser(user *model.User) (*model.User, error)
 	UpdateUserPassword(username, password string) error
 	UpdateUserPasswordByID(userID, password string) error
+	SoftDeleteUser(userID string) error
+	DeleteUserSessions(userID string) error
+	GetOnlineUserIDs(updatedSecondsAgo int64) ([]string, error)
+	EnsureSystemAdmin(userID, username, email, hashedPassword, authMode string) error
 	GetUsersByTeam(teamID string, asGuestID string, showEmail, showName bool) ([]*model.User, error)
 	SearchUsersByTeam(teamID string, searchQuery string, asGuestID string, excludeBots bool, showEmail, showName bool) ([]*model.User, error)
 	PatchUserPreferences(userID string, patch model.UserPreferencesPatch) (mmModel.Preferences, error)

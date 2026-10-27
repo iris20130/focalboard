@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.21.8
 
 require (
+	github.com/6tail/lunar-go v1.4.6
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/mux v1.8.1

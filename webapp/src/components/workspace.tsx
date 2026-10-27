@@ -31,6 +31,8 @@ import {getHiddenBoardIDs} from '../store/sidebar'
 
 import CenterPanel from './centerPanel'
 import BoardTemplateSelector from './boardTemplateSelector/boardTemplateSelector'
+import DueLayout from './dueLayout/dueLayout'
+import CardLocator, {LocateFallbackEvent} from './cardLocator/cardLocator'
 import GuestNoBoards from './guestNoBoards'
 
 import Sidebar from './sidebar/sidebar'
@@ -39,6 +41,7 @@ import './workspace.scss'
 
 type Props = {
     readonly: boolean
+    contentReadonly?: boolean
 }
 
 function CenterContent(props: Props) {
@@ -91,6 +94,19 @@ function CenterContent(props: Props) {
             wsClient.removeOnConfigChange(onConfigChangeHandler)
         }
     }, [cardLimitTimestamp, match.params.boardId, templates])
+
+    // When the target card is not visible in the current view, open it in the
+    // card dialog so the reminder click still takes the user to the right card.
+    useEffect(() => {
+        const onLocateFallback = (event: Event) => {
+            const detail = (event as CustomEvent<{cardId: string}>).detail
+            if (detail?.cardId) {
+                showCard(detail.cardId)
+            }
+        }
+        window.addEventListener(LocateFallbackEvent, onLocateFallback)
+        return () => window.removeEventListener(LocateFallbackEvent, onLocateFallback)
+    }, [showCard])
 
     const templateSelector = (
         <BoardTemplateSelector
@@ -193,9 +209,12 @@ const Workspace = (props: Props) => {
                         defaultMessage="You're editing a board template."
                     />
                 </div>}
-                <CenterContent
-                    readonly={props.readonly}
-                />
+                {props.readonly ?
+                    <CenterContent readonly={Boolean(props.contentReadonly)}/> :
+                    <DueLayout>
+                        <CenterContent readonly={Boolean(props.contentReadonly)}/>
+                    </DueLayout>}
+                <CardLocator/>
             </div>
         </div>
     )

@@ -14,9 +14,13 @@ package sqlstore
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
+
 	"github.com/mattermost/focalboard/server/model"
+	"github.com/mattermost/focalboard/server/utils"
 
 	mmModel "github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/shared/mlog"
@@ -581,6 +585,168 @@ func (s *SQLStore) GetUserTimezone(userID string) (string, error) {
 func (s *SQLStore) GetUsersByTeam(teamID string, asGuestID string, showEmail bool, showName bool) ([]*model.User, error) {
 	return s.getUsersByTeam(s.db, teamID, asGuestID, showEmail, showName)
 
+}
+
+// SoftDeleteUser marks a user as deleted. Sessions are removed separately so
+// the account is signed out immediately.
+func (s *SQLStore) SoftDeleteUser(userID string) error {
+	query := s.getQueryBuilder(s.db).Update(s.tablePrefix+"users").
+		Set("delete_at", utils.GetMillis()).
+		Set("update_at", utils.GetMillis()).
+		Where(sq.Eq{"id": userID}).
+		Where(sq.Eq{"delete_at": 0})
+
+	result, err := query.Exec()
+	if err != nil {
+		return err
+	}
+	rowCount, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount < 1 {
+		return model.NewErrNotFound("user")
+	}
+	return nil
+}
+
+func (s *SQLStore) DeleteUserSessions(userID string) error {
+	query := s.getQueryBuilder(s.db).Delete(s.tablePrefix + "sessions").
+		Where(sq.Eq{"user_id": userID})
+	_, err := query.Exec()
+	return err
+}
+
+func (s *SQLStore) GetOnlineUserIDs(updatedSecondsAgo int64) ([]string, error) {
+	query := s.getQueryBuilder(s.db).
+		Select("DISTINCT user_id").
+		From(s.tablePrefix + "sessions").
+		Where(sq.Gt{"update_at": utils.GetMillis() - utils.SecondsToMillis(updatedSecondsAgo)})
+
+	rows, err := query.Query()
+	if err != nil {
+		return nil, err
+	}
+	defer s.CloseRows(rows)
+
+	userIDs := make([]string, 0)
+	for rows.Next() {
+		var userID string
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		userIDs = append(userIDs, userID)
+	}
+	return userIDs, nil
+}
+
+func (s *SQLStore) EnsureSystemAdmin(userID, username, email, hashedPassword, authMode string) error {
+	// Already migrated or created: never overwrite the current admin password.
+	var existingID string
+	err := s.getQueryBuilder(s.db).Select("id").From(s.tablePrefix + "users").
+		Where(sq.Eq{"id": userID}).QueryRow().Scan(&existingID)
+	if err == nil {
+		return nil
+	}
+	if err != sql.ErrNoRows {
+		return err
+	}
+
+	// A previous install may already have a regular account with this username.
+	// Move all of its data to the fixed administrator ID so the default login works.
+	var oldID, oldEmail string
+	err = s.getQueryBuilder(s.db).Select("id", "email").From(s.tablePrefix + "users").
+		Where(sq.Eq{"username": username}).QueryRow().Scan(&oldID, &oldEmail)
+	if err == sql.ErrNoRows {
+		_, err = s.createUser(s.db, &model.User{
+			ID:          userID,
+			Username:    username,
+			Email:       email,
+			Password:    hashedPassword,
+			AuthService: authMode,
+		})
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	if oldEmail != "" {
+		email = oldEmail
+	}
+
+	tx, txErr := s.db.BeginTx(context.Background(), nil)
+	if txErr != nil {
+		return txErr
+	}
+	rollback := func(cause error) error {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			s.logger.Error("transaction rollback error", mlog.Err(rollbackErr), mlog.String("methodName", "EnsureSystemAdmin"))
+		}
+		return cause
+	}
+
+	// Sessions must not be inherited by the administrator account.
+	if _, err := s.getQueryBuilder(tx).Delete(s.tablePrefix + "sessions").Where(sq.Eq{"user_id": oldID}).Exec(); err != nil {
+		return rollback(err)
+	}
+
+	// Board membership rows are keyed by (board_id, user_id); drop duplicates first.
+	if _, err := s.getQueryBuilder(tx).Delete(s.tablePrefix + "board_members").
+		Where(sq.Eq{"user_id": oldID}).
+		Where(sq.Expr("board_id IN (SELECT board_id FROM "+s.tablePrefix+"board_members WHERE user_id = ?)", userID)).
+		Exec(); err != nil {
+		return rollback(err)
+	}
+
+	type reference struct {
+		table  string
+		column string
+	}
+	references := []reference{
+		{"blocks", "created_by"},
+		{"blocks", "modified_by"},
+		{"blocks_history", "created_by"},
+		{"blocks_history", "modified_by"},
+		{"board_members", "user_id"},
+		{"board_members_history", "user_id"},
+		{"boards", "created_by"},
+		{"boards", "modified_by"},
+		{"boards_history", "created_by"},
+		{"boards_history", "modified_by"},
+		{"categories", "user_id"},
+		{"category_boards", "user_id"},
+		{"sharing", "modified_by"},
+		{"subscriptions", "subscriber_id"},
+		{"teams", "modified_by"},
+		{"preferences", "userid"},
+	}
+	for _, ref := range references {
+		if _, err := s.getQueryBuilder(tx).Update(s.tablePrefix + ref.table).
+			Set(ref.column, userID).
+			Where(sq.Eq{ref.column: oldID}).
+			Exec(); err != nil {
+			return rollback(err)
+		}
+	}
+
+	// Move the user row last so the old ID still resolves during the updates.
+	if _, err := s.getQueryBuilder(tx).Update(s.tablePrefix + "users").
+		Set("id", userID).
+		Set("username", username).
+		Set("email", email).
+		Set("password", hashedPassword).
+		Set("auth_service", authMode).
+		Set("update_at", utils.GetMillis()).
+		Where(sq.Eq{"id": oldID}).
+		Exec(); err != nil {
+		return rollback(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *SQLStore) GetUsersList(userIDs []string, showEmail bool, showName bool) ([]*model.User, error) {

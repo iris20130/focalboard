@@ -22,6 +22,8 @@ const SetWindowTitleAndIcon = (): null => {
                 title += ` | ${activeView.title}`
             }
             document.title = title
+        } else if (Utils.isFocalboardPlugin()) {
+            document.title = 'Boards - Mattermost'
         } else {
             document.title = 'Focalboard'
         }

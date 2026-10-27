@@ -10,7 +10,7 @@ import {getClientConfig} from '../../../store/clientConfig'
 import {useAppSelector} from '../../../store/hooks'
 import {getCurrentBoard} from '../../../store/boards'
 import {getCurrentCard} from '../../../store/cards'
-import {OnboardingBoardTitle, OnboardingCardTitle} from '../../cardDetail/cardDetail'
+import {isOnboardingBoardTitle, isOnboardingCardTitle} from '../../cardDetail/cardDetail'
 import {getOnboardingTourCategory, getOnboardingTourStarted, getOnboardingTourStep} from '../../../store/users'
 import TourTip from '../../tutorial_tour_tip/tutorial_tour_tip'
 import {TutorialTourTipPunchout} from '../../tutorial_tour_tip/tutorial_tour_tip_backdrop'
@@ -36,7 +36,7 @@ const TourTipRenderer = (props: Props): JSX.Element | null => {
     const board = useAppSelector(getCurrentBoard)
     const clientConfig = useAppSelector<ClientConfig>(getClientConfig)
 
-    let isOnboardingBoard = board ? board.title === OnboardingBoardTitle : false
+    let isOnboardingBoard = board ? isOnboardingBoardTitle(board.title) : false
     const onboardingTourStarted = useAppSelector(getOnboardingTourStarted)
     const onboardingTourCategory = useAppSelector(getOnboardingTourCategory)
     const onboardingTourStep = useAppSelector(getOnboardingTourStep)
@@ -51,7 +51,7 @@ const TourTipRenderer = (props: Props): JSX.Element | null => {
 
     if (props.requireCard) {
         const card = useAppSelector(getCurrentCard)
-        const isOnboardingCard = card ? card.title === OnboardingCardTitle : false
+        const isOnboardingCard = card ? isOnboardingCardTitle(card.title) : false
 
         showTourTip = showTourTip && isOnboardingCard
     }

@@ -23,6 +23,7 @@ type Params struct {
 	NotifyBackends     []notify.Backend
 	PermissionsService permissions.PermissionsService
 	ServicesAPI        model.ServicesAPI
+	IsPlugin           bool
 }
 
 func (p Params) CheckValid() error {

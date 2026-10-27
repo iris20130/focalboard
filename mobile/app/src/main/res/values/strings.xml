@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Focalboard</string>
+    <string name="tab_board">看板</string>
+    <string name="tab_calendar">日历</string>
+    <string name="tab_panel">逾期设置</string>
+    <string name="server_address_title">Focalboard 服务器地址</string>
+    <string name="server_address_hint">例如 http://192.168.1.100:8088</string>
+    <string name="server_address_connect">连接</string>
+    <string name="server_address_invalid">地址格式不正确，请填写 http://IP:端口</string>
+    <string name="drag_hint">已进入排序模式：拖动图标换位置</string>
+    <string name="server_menu">切换服务器</string>
+    <string name="board_scroller_prev">向左看板</string>
+    <string name="board_scroller_next">向右看板</string>
+</resources>

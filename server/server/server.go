@@ -58,6 +58,7 @@ type Server struct {
 	metricsServer          *metrics.Service
 	metricsService         *metrics.Metrics
 	metricsUpdaterTask     *scheduler.ScheduledTask
+	dueReminderTask        *scheduler.ScheduledTask
 	auditService           *audit.Audit
 	notificationService    *notify.Service
 	servicesStartStopMutex sync.Mutex
@@ -143,7 +144,14 @@ func New(params Params) (*Server, error) {
 	}
 	app := app.New(params.Cfg, wsAdapter, appServices)
 
-	focalboardAPI := api.NewAPI(app, params.SingleUserToken, params.Cfg.AuthMode, params.PermissionsService, params.Logger, auditService)
+	if !params.IsPlugin && params.Cfg.AuthMode != MattermostAuthMod {
+		if err := ensureAdminAssigned(params.DBStore); err != nil {
+			params.Logger.Error("Unable to assign the workspace administrator", mlog.Err(err))
+			return nil, err
+		}
+	}
+
+	focalboardAPI := api.NewAPI(app, params.SingleUserToken, params.Cfg.AuthMode, params.PermissionsService, params.Logger, auditService, params.IsPlugin)
 
 	// Local router for admin APIs
 	localRouter := mux.NewRouter()
@@ -228,6 +236,7 @@ func NewStore(config *config.Configuration, isSingleUser bool, logger mlog.Logge
 		TablePrefix:      config.DBTablePrefix,
 		Logger:           logger,
 		DB:               sqlDB,
+		IsPlugin:         false,
 		IsSingleUser:     isSingleUser,
 	}
 
@@ -294,6 +303,10 @@ func (s *Server) Start() error {
 	// metricsUpdater()   Calling this immediately causes integration unit tests to fail.
 	s.metricsUpdaterTask = scheduler.CreateRecurringTask("updateMetrics", metricsUpdater, updateMetricsTaskFrequency)
 
+	// Reminder settings are per account. Tick once a minute; each account's
+	// configured interval decides whether a message is actually sent.
+	s.dueReminderTask = scheduler.CreateRecurringTask("sendDueReminders", s.sendDueReminders, time.Minute)
+
 	if s.config.Telemetry {
 		firstRun := utils.GetMillis()
 		s.telemetry.RunTelemetryJob(firstRun)
@@ -333,6 +346,10 @@ func (s *Server) Shutdown() error {
 
 	if s.metricsUpdaterTask != nil {
 		s.metricsUpdaterTask.Cancel()
+	}
+
+	if s.dueReminderTask != nil {
+		s.dueReminderTask.Cancel()
 	}
 
 	if err := s.telemetry.Shutdown(); err != nil {

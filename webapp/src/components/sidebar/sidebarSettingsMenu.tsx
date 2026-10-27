@@ -2,6 +2,7 @@
 // See LICENSE.txt for license information.
 import React, {useState} from 'react'
 import {FormattedMessage, useIntl} from 'react-intl'
+import {useHistory} from 'react-router-dom'
 
 import {Archiver} from '../../archiver'
 import {
@@ -19,7 +20,9 @@ import MenuWrapper from '../../widgets/menuWrapper'
 import {useAppDispatch, useAppSelector} from '../../store/hooks'
 import {storeLanguage} from '../../store/language'
 import {getCurrentTeam, Team} from '../../store/teams'
+import {getMe} from '../../store/users'
 import {UserSettings} from '../../userSettings'
+import {IUser} from '../../user'
 
 import './sidebarSettingsMenu.scss'
 import CheckIcon from '../../widgets/icons/check'
@@ -35,6 +38,8 @@ const SidebarSettingsMenu = (props: Props) => {
     const intl = useIntl()
     const dispatch = useAppDispatch()
     const currentTeam = useAppSelector<Team|null>(getCurrentTeam)
+    const me = useAppSelector<IUser|null>(getMe)
+    const history = useHistory()
 
     // we need this as the sidebar doesn't always need to re-render
     // on theme change. This can cause props and the actual
@@ -85,6 +90,18 @@ const SidebarSettingsMenu = (props: Props) => {
                     />
                 </div>
                 <Menu position='top'>
+                    <Menu.Text
+                        id='reminder-settings'
+                        name={intl.formatMessage({id: 'Sidebar.reminder-settings', defaultMessage: 'Due reminders'})}
+                        onClick={() => history.push('/settings/reminders')}
+                    />
+                    {me?.permissions?.includes('manage_system') &&
+                        <Menu.Text
+                            id='admin-panel'
+                            name={intl.formatMessage({id: 'Sidebar.admin-panel', defaultMessage: 'Member panel'})}
+                            onClick={() => history.push('/admin')}
+                        />}
+                    <Menu.Separator/>
                     <Menu.SubMenu
                         id='import'
                         name={intl.formatMessage({id: 'Sidebar.import', defaultMessage: 'Import'})}

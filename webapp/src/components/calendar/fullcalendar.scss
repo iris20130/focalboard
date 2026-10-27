@@ -288,3 +288,66 @@
         }
     }
 }
+
+.CalendarContainer {
+    .dateMeta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .holidayTag {
+        max-width: 68px;
+        padding: 0 4px;
+        overflow: hidden;
+        border-radius: 3px;
+        font-size: 10px;
+        line-height: 14px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+
+        &.isOff {
+            color: #d9480f;
+            background-color: rgba(217, 72, 15, 0.1);
+        }
+
+        &.isWork {
+            color: #1c7ed6;
+            background-color: rgba(28, 126, 214, 0.1);
+        }
+    }
+
+    .termTag {
+        font-size: 10px;
+        line-height: 14px;
+        font-weight: 600;
+    }
+
+    .leaveTag {
+        max-width: 68px;
+        padding: 0 4px;
+        overflow: hidden;
+        border-radius: 3px;
+        font-size: 10px;
+        line-height: 14px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        background-color: rgba(var(--center-channel-color-rgb), 0.06);
+    }
+}
+
+.CalendarContainer {
+    .fc-event-property {
+        max-width: 100%;
+        padding: 0 4px;
+        overflow: hidden;
+        border-radius: 3px;
+        background-color: rgba(255, 255, 255, 0.45);
+        font-size: 10px;
+        line-height: 14px;
+        opacity: 0.85;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}

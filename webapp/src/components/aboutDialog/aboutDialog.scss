@@ -1,0 +1,149 @@
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
+// See LICENSE.txt for license information.
+
+.AboutDialog {
+    width: min(560px, calc(100vw - 40px));
+    max-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    color: rgb(var(--center-channel-color-rgb));
+    background-color: rgb(var(--center-channel-bg-rgb));
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+
+    &__backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.42);
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid rgba(var(--center-channel-color-rgb), 0.1);
+    }
+
+    &__brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        svg {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    &__title {
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    &__version {
+        color: rgba(var(--center-channel-color-rgb), 0.56);
+        font-size: 12px;
+    }
+
+    &__close {
+        display: inline-flex;
+        padding: 4px;
+        color: rgba(var(--center-channel-color-rgb), 0.6);
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+
+        &:hover {
+            color: rgb(var(--center-channel-color-rgb));
+            background-color: rgba(var(--center-channel-color-rgb), 0.08);
+        }
+    }
+
+    &__tabs {
+        display: flex;
+        gap: 4px;
+        padding: 8px 14px 0;
+        border-bottom: 1px solid rgba(var(--center-channel-color-rgb), 0.1);
+
+        button {
+            padding: 6px 10px;
+            color: rgba(var(--center-channel-color-rgb), 0.64);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 13px;
+            cursor: pointer;
+
+            &.active {
+                color: rgb(var(--center-channel-color-rgb));
+                border-bottom-color: #5d89ff;
+                font-weight: 600;
+            }
+        }
+    }
+
+    &__body {
+        overflow-y: auto;
+        padding: 14px 18px 18px;
+        font-size: 13px;
+        line-height: 1.6;
+
+        p {
+            margin: 0 0 10px;
+        }
+
+        h4 {
+            margin: 14px 0 6px;
+            font-size: 13px;
+        }
+
+        ol {
+            margin: 0 0 8px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        a {
+            color: #5d89ff;
+            word-break: break-all;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    &__field {
+        display: flex;
+        gap: 10px;
+        padding: 5px 0;
+        border-top: 1px solid rgba(var(--center-channel-color-rgb), 0.06);
+    }
+
+    &__label {
+        flex: 0 0 110px;
+        color: rgba(var(--center-channel-color-rgb), 0.64);
+    }
+
+    &__copyright {
+        margin-top: 12px;
+        padding-top: 10px;
+        color: rgba(var(--center-channel-color-rgb), 0.64);
+        border-top: 1px solid rgba(var(--center-channel-color-rgb), 0.1);
+        font-size: 12px;
+    }
+
+    &__usage {
+        font-size: 12.5px;
+    }
+}

@@ -1,4 +1,4 @@
-.PHONY: prebuild clean cleanall ci server server-mac server-linux server-win server-linux-package generate watch-server webapp mac-app win-app-wpf linux-app modd-precheck templates-archive
+.PHONY: prebuild clean cleanall ci server server-mac server-linux server-win server-linux-package generate watch-server webapp mac-app win-app-wpf linux-app modd-precheck templates-archive templates-archive-zh
 
 PACKAGE_FOLDER = focalboard
 
@@ -40,6 +40,9 @@ ci: webapp-ci server-test ## Simulate CI, locally.
 
 templates-archive: ## Build templates archive file
 	cd server/assets/build-template-archive; go run -tags '$(BUILD_TAGS)' main.go --dir="../templates-boardarchive" --out="../templates.boardarchive"
+
+templates-archive-zh: ## Build Simplified Chinese templates archive file
+	cd server/assets/build-template-archive; go run -tags '$(BUILD_TAGS)' main.go --dir="../templates-boardarchive-zh" --out="../templates-zh.boardarchive"
 
 server: ## Build server for local environment.
 	$(eval LDFLAGS += -X "github.com/mattermost/focalboard/server/model.Edition=dev")

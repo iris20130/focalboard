@@ -41,6 +41,7 @@ type API struct {
 	MattermostAuth  bool
 	logger          mlog.LoggerIFace
 	audit           *audit.Audit
+	isPlugin        bool
 }
 
 func NewAPI(
@@ -50,6 +51,7 @@ func NewAPI(
 	permissions permissions.PermissionsService,
 	logger mlog.LoggerIFace,
 	audit *audit.Audit,
+	isPlugin bool,
 ) *API {
 	return &API{
 		app:             app,
@@ -58,6 +60,7 @@ func NewAPI(
 		permissions:     permissions,
 		logger:          logger,
 		audit:           audit,
+		isPlugin:        isPlugin,
 	}
 }
 
@@ -74,6 +77,7 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 
 	// V2 routes (ToDo: migrate these to V3 when ready to ship V3)
 	a.registerUsersRoutes(apiv2)
+	a.registerAdminRoutes(apiv2)
 	a.registerAuthRoutes(apiv2)
 	a.registerMembersRoutes(apiv2)
 	a.registerCategoriesRoutes(apiv2)
@@ -88,6 +92,9 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 	a.registerBoardsAndBlocksRoutes(apiv2)
 	a.registerChannelsRoutes(apiv2)
 	a.registerTemplatesRoutes(apiv2)
+	a.registerDueReminderRoutes(apiv2)
+	a.registerTopBarRoutes(apiv2)
+	a.registerLeaveRoutes(apiv2)
 	a.registerBoardsRoutes(apiv2)
 	a.registerBlocksRoutes(apiv2)
 	a.registerContentBlocksRoutes(apiv2)

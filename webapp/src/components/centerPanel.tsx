@@ -46,7 +46,6 @@ import ShareBoardLoginButton from './shareBoard/shareBoardLoginButton'
 
 import CardDialog from './cardDialog'
 import RootPortal from './rootPortal'
-import TopBar from './topBar'
 import ViewHeader from './viewHeader/viewHeader'
 import ViewTitle from './viewTitle'
 import Kanban from './kanban/kanban'
@@ -396,6 +395,16 @@ const CenterPanel = (props: Props) => {
         return {visible: vg, hidden: hg}
     }, [cards, activeView.fields.visibleOptionIds, activeView.fields.hiddenOptionIds, groupByProperty, boardUsers])
 
+    const dateDisplayProperties = useMemo(() => {
+        const ids = activeView.fields.dateDisplayPropertyIds
+        if (ids && ids.length > 0) {
+            return ids.
+                map((id) => board.cardProperties.find((property) => property.id === id)).
+                filter((property): property is IPropertyTemplate => Boolean(property))
+        }
+        return props.dateDisplayProperty ? [props.dateDisplayProperty] : []
+    }, [activeView.fields.dateDisplayPropertyIds, board.cardProperties, props.dateDisplayProperty])
+
     return (
         <div
             className='BoardComponent'
@@ -417,7 +426,6 @@ const CenterPanel = (props: Props) => {
                 </RootPortal>}
 
             <div className='top-head'>
-                <TopBar/>
                 <div className='mid-head'>
                     <ViewTitle
                         key={board.id + board.title}
@@ -455,7 +463,7 @@ const CenterPanel = (props: Props) => {
             <Kanban
                 board={props.board}
                 activeView={props.activeView}
-                cards={props.cards}
+                cards={cards}
                 groupByProperty={props.groupByProperty}
                 visibleGroups={visibleGroups}
                 hiddenGroups={hiddenGroups}
@@ -472,7 +480,7 @@ const CenterPanel = (props: Props) => {
                 <Table
                     board={props.board}
                     activeView={props.activeView}
-                    cards={props.cards}
+                    cards={cards}
                     groupByProperty={props.groupByProperty}
                     views={props.views}
                     visibleGroups={visibleGroups}
@@ -488,10 +496,11 @@ const CenterPanel = (props: Props) => {
             {activeView.fields.viewType === 'calendar' &&
                 <CalendarFullView
                     board={props.board}
-                    cards={props.cards}
+                    cards={cards}
                     activeView={props.activeView}
                     readonly={props.readonly}
                     dateDisplayProperty={props.dateDisplayProperty}
+                    dateDisplayProperties={dateDisplayProperties}
                     showCard={showCard}
                     addCard={(properties: Record<string, string>) => {
                         addCard('', true, properties)
@@ -501,7 +510,7 @@ const CenterPanel = (props: Props) => {
             {activeView.fields.viewType === 'gallery' &&
                 <Gallery
                     board={props.board}
-                    cards={props.cards}
+                    cards={cards}
                     activeView={props.activeView}
                     readonly={props.readonly}
                     onCardClicked={cardClicked}

@@ -71,6 +71,7 @@ const CalculationRow = (props: Props): JSX.Element => {
                             }}
                             cards={cards}
                             property={template}
+                            board={board}
                             hovered={hovered}
                             optionsComponent={TableCalculationOptions}
                         />

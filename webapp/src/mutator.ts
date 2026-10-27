@@ -17,6 +17,7 @@ import {FilterGroup} from './blocks/filterGroup'
 import octoClient from './octoClient'
 import undoManager from './undomanager'
 import {Utils, IDType} from './utils'
+import {getActualCompletionSetting, todayDateValue} from './actualCompletion'
 import {UserSettings} from './userSettings'
 import TelemetryClient, {TelemetryCategory, TelemetryActions} from './telemetry/telemetryClient'
 import {Category} from './store/sidebar'
@@ -644,7 +645,32 @@ class Mutator {
             delete newCard.fields.properties[propertyId]
         }
         await this.updateBlock(boardId, newCard, card, description)
+        await this.applyActualCompletion(boardId, newCard, propertyId, value)
         TelemetryClient.trackEvent(TelemetryCategory, TelemetryActions.EditCardProperty, {board: card.boardId, card: card.id})
+    }
+
+    private async applyActualCompletion(boardId: string, newCard: Card, propertyId: string, value?: string | string[]) {
+        const board = store.getState().boards?.boards?.[boardId]
+        if (!board) {
+            return
+        }
+        const setting = getActualCompletionSetting(board)
+        if (!setting.enabled || !setting.datePropertyId || propertyId !== setting.statusPropertyId) {
+            return
+        }
+
+        const status = Array.isArray(value) ? value[0] : value
+        if (status === setting.completedOptionId) {
+            const dateValue = todayDateValue()
+            if (newCard.fields.properties[setting.datePropertyId] !== dateValue) {
+                await this.changePropertyValue(boardId, newCard, setting.datePropertyId, dateValue, 'set actual completion date')
+            }
+            return
+        }
+
+        if (newCard.fields.properties[setting.datePropertyId]) {
+            await this.changePropertyValue(boardId, newCard, setting.datePropertyId, undefined, 'clear actual completion date')
+        }
     }
 
     async changePropertyTypeAndName(board: Board, cards: Card[], propertyTemplate: IPropertyTemplate, newType: PropertyTypeEnum, newName: string) {
@@ -816,6 +842,19 @@ class Mutator {
             },
             async () => {
                 await octoClient.patchBlock(boardId, viewId, {updatedFields: {dateDisplayPropertyId: oldDateDisplayPropertyId}})
+            },
+            'display by',
+            this.undoDisplayId,
+        )
+    }
+
+    async changeViewDateDisplayPropertyIds(boardId: string, viewId: string, oldIds: string[] | undefined, ids: string[]): Promise<void> {
+        await undoManager.perform(
+            async () => {
+                await octoClient.patchBlock(boardId, viewId, {updatedFields: {dateDisplayPropertyIds: ids, dateDisplayPropertyId: ids[0]}})
+            },
+            async () => {
+                await octoClient.patchBlock(boardId, viewId, {updatedFields: {dateDisplayPropertyIds: oldIds, dateDisplayPropertyId: oldIds?.[0]}})
             },
             'display by',
             this.undoDisplayId,

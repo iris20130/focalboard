@@ -112,11 +112,16 @@ func (ws *Server) Start() {
 	}
 
 	isSSL := ws.ssl && fileExists("./cert/cert.pem") && fileExists("./cert/key.pem")
+	listener, err := listenWithReuse(ws.Addr)
+	if err != nil {
+		ws.logger.Fatal("Unable to listen", mlog.Err(err))
+		return
+	}
 	if isSSL {
 		ws.logger.Info("https server started", mlog.Int("port", ws.port))
 		go func() {
-			if err := ws.ListenAndServeTLS("./cert/cert.pem", "./cert/key.pem"); err != nil {
-				ws.logger.Fatal("ListenAndServeTLS", mlog.Err(err))
+			if err := ws.ServeTLS(listener, "./cert/cert.pem", "./cert/key.pem"); !errors.Is(err, http.ErrServerClosed) {
+				ws.logger.Fatal("ServeTLS", mlog.Err(err))
 			}
 		}()
 
@@ -125,8 +130,8 @@ func (ws *Server) Start() {
 
 	ws.logger.Info("http server started", mlog.Int("port", ws.port))
 	go func() {
-		if err := ws.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			ws.logger.Fatal("ListenAndServeTLS", mlog.Err(err))
+		if err := ws.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+			ws.logger.Fatal("Serve", mlog.Err(err))
 		}
 		ws.logger.Info("http server stopped")
 	}()

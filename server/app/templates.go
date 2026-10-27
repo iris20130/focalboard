@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultTemplateVersion = 6 // bump this number to force default templates to be re-imported
+	defaultTemplateVersion = 8 // bump this number to force default templates to be re-imported
 )
 
 func (a *App) InitTemplates() error {
@@ -37,7 +37,8 @@ func (a *App) initializeTemplates() (bool, error) {
 
 	a.logger.Debug("Importing new default templates",
 		mlog.String("reason", reason),
-		mlog.Int("size", len(assets.DefaultTemplatesArchive)),
+		mlog.Int("size_en", len(assets.DefaultTemplatesArchive)),
+		mlog.Int("size_zh", len(assets.DefaultTemplatesArchiveZH)),
 	)
 
 	// Remove in case of newer Templates
@@ -45,16 +46,16 @@ func (a *App) initializeTemplates() (bool, error) {
 		return false, fmt.Errorf("cannot remove old template boards: %w", err)
 	}
 
-	r := bytes.NewReader(assets.DefaultTemplatesArchive)
-
 	opt := model.ImportArchiveOptions{
 		TeamID:        model.GlobalTeamID,
 		ModifiedBy:    model.SystemUserID,
 		BlockModifier: fixTemplateBlock,
 		BoardModifier: fixTemplateBoard,
 	}
-	if err = a.ImportArchive(r, opt); err != nil {
-		return false, fmt.Errorf("cannot initialize global templates for team %s: %w", model.GlobalTeamID, err)
+	for _, archive := range [][]byte{assets.DefaultTemplatesArchive, assets.DefaultTemplatesArchiveZH} {
+		if err = a.ImportArchive(bytes.NewReader(archive), opt); err != nil {
+			return false, fmt.Errorf("cannot initialize global templates for team %s: %w", model.GlobalTeamID, err)
+		}
 	}
 	return true, nil
 }

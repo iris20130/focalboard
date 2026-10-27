@@ -79,3 +79,58 @@
         height: 100%;
     }
 }
+
+.ViewHeaderDisplayByMenu__panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    min-width: 200px;
+    max-height: 320px;
+    margin-top: 4px;
+    padding: 4px;
+    overflow-y: auto;
+    background-color: rgb(var(--center-channel-bg-rgb));
+    border: 1px solid rgba(var(--center-channel-color-rgb), 0.16);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.ViewHeaderDisplayByMenu__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba(var(--center-channel-color-rgb), 0.08);
+    }
+
+    &.checked {
+        color: rgb(var(--button-bg-rgb));
+        font-weight: 600;
+    }
+}
+
+.ViewHeaderDisplayByMenu__check {
+    display: inline-flex;
+    flex: 0 0 16px;
+    width: 16px;
+    align-items: center;
+}
+
+.ViewHeaderDisplayByMenu__name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ViewHeaderDisplayByMenu__empty {
+    padding: 6px 8px;
+    color: rgba(var(--center-channel-color-rgb), 0.56);
+    font-size: 12px;
+}

@@ -59,7 +59,7 @@ const RegisterPage = () => {
                 <div className='email'>
                     <input
                         id='login-email'
-                        placeholder={'Enter email'}
+                        placeholder={'请输入邮箱'}
                         value={email}
                         onChange={(e) => setEmail(e.target.value.trim())}
                     />
@@ -67,7 +67,7 @@ const RegisterPage = () => {
                 <div className='username'>
                     <input
                         id='login-username'
-                        placeholder={'Enter username'}
+                        placeholder={'请输入用户名'}
                         value={username}
                         onChange={(e) => setUsername(e.target.value.trim())}
                     />
@@ -76,7 +76,7 @@ const RegisterPage = () => {
                     <input
                         id='login-password'
                         type='password'
-                        placeholder={'Enter password'}
+                        placeholder={'请输入密码'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
@@ -85,7 +85,7 @@ const RegisterPage = () => {
                     filled={true}
                     submit={true}
                 >
-                    {'Register'}
+                    {'注册'}
                 </Button>
             </form>
             <Link to='/login'>

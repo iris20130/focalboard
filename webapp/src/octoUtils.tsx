@@ -142,6 +142,8 @@ class OctoUtils {
             case 'is': return intl.formatMessage({id: 'Filter.is', defaultMessage: 'is'})
             case 'isBefore': return intl.formatMessage({id: 'Filter.is-before', defaultMessage: 'is before'})
             case 'isAfter': return intl.formatMessage({id: 'Filter.is-after', defaultMessage: 'is after'})
+            case 'isWithinDays': return intl.formatMessage({id: 'Filter.is-within-days', defaultMessage: 'is due within'})
+            case 'isOverdue': return intl.formatMessage({id: 'Filter.is-overdue', defaultMessage: 'is overdue'})
             case 'isSet': return intl.formatMessage({id: 'Filter.is-set', defaultMessage: 'is set'})
             case 'isNotSet': return intl.formatMessage({id: 'Filter.is-not-set', defaultMessage: 'is not set'})
             default: {
@@ -194,6 +196,8 @@ class OctoUtils {
             case 'is':
             case 'isBefore':
             case 'isAfter':
+            case 'isWithinDays':
+            case 'isOverdue':
             case 'isSet':
             case 'isNotSet':
                 return currentFilterCondition

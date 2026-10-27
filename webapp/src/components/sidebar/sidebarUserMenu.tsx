@@ -13,8 +13,10 @@ import Menu from '../../widgets/menu'
 import MenuWrapper from '../../widgets/menuWrapper'
 import {getMe, setMe} from '../../store/users'
 import {useAppSelector, useAppDispatch} from '../../store/hooks'
+import {Utils} from '../../utils'
 
 import ModalWrapper from '../modalWrapper'
+import AboutDialog from '../aboutDialog/aboutDialog'
 
 import {IAppWindow} from '../../types'
 
@@ -28,9 +30,13 @@ const SidebarUserMenu = () => {
     const dispatch = useAppDispatch()
     const history = useHistory()
     const [showRegistrationLinkDialog, setShowRegistrationLinkDialog] = useState(false)
+    const [showAboutDialog, setShowAboutDialog] = useState(false)
     const user = useAppSelector<IUser|null>(getMe)
     const intl = useIntl()
 
+    if (Utils.isFocalboardPlugin()) {
+        return <></>
+    }
     return (
         <div className='SidebarUserMenu'>
             <ModalWrapper>
@@ -82,17 +88,15 @@ const SidebarUserMenu = () => {
                         <Menu.Text
                             id='about'
                             name={intl.formatMessage({id: 'Sidebar.about', defaultMessage: 'About Focalboard'})}
-                            onClick={async () => {
-                                window.open('https://www.focalboard.com?utm_source=webapp', '_blank')
-
-                                // TODO: Review if this is needed in the future, this is to fix the problem with linux webview links
-                                if (window.openInNewBrowser) {
-                                    window.openInNewBrowser('https://www.focalboard.com?utm_source=webapp')
-                                }
-                            }}
+                            onClick={() => setShowAboutDialog(true)}
                         />
                     </Menu>
                 </MenuWrapper>
+
+                {showAboutDialog &&
+                    <AboutDialog
+                        onClose={() => setShowAboutDialog(false)}
+                    />}
 
                 {showRegistrationLinkDialog &&
                     <RegistrationLink

@@ -1,0 +1,316 @@
+Focalboard LAN Edition (Windows, v8.0.0 - Leave Edition)
+================================
+
+1. Starting
+  1. Double-click Focalboard.exe.
+  2. A tray icon appears and the browser opens automatically (the LAN address is
+     preferred, e.g. http://192.168.1.100:8088/).
+  3. First use: click "Register" on the page to create the first account.
+     The first registered account automatically becomes the administrator.
+  4. Other colleagues must register through an invite link (password: 8+ chars):
+     sign in as admin -> click the user name at the bottom-left -> "Invite user"
+     -> copy the registration link.
+     No account or default password is preinstalled.
+  5. Login fix: after entering the account and password, clicking "Log in" goes
+     straight to the boards; no manual page refresh is needed.
+     When upgrading from an older build, press Ctrl+F5 once to avoid loading a
+     cached front-end bundle.
+
+2. Auto-start and silent start
+  1. "Start with Windows" is enabled by default: after you log in to Windows the
+     service starts in the background, with no browser and no window, only a tray
+     icon.
+  2. The first run writes the startup entry to
+     HKCU\Software\Microsoft\Windows\CurrentVersion\Run (value name FocalboardLAN).
+     It applies to the current user only and needs no administrator rights.
+  3. Toggle it from the tray menu -> "Start with Windows (silent)".
+  4. Manual silent start: Focalboard.exe --silent
+     Use the tray menu -> "Open Focalboard" to open the browser later.
+  5. If you move or rename the program folder, run Focalboard.exe once in the new
+     location so the startup entry is updated.
+  6. If the tray icon is missing after boot, check the hidden tray area first and
+     make sure security software did not block the startup entry.
+  7. A failed background start does not show a dialog; the reason is written to
+     data\focalboard.log (tray -> "View log").
+
+3. Access from other computers
+  1. Keep this PC and colleagues on the same LAN (same Wi-Fi or switch).
+  2. Tray menu -> "LAN address (click to copy)" and send it to colleagues.
+  3. If they cannot open it, use tray -> "Allow LAN access (firewall)" and confirm
+     the Windows prompt.
+  4. Invite colleagues: sign in -> bottom-left user name -> "Invite user" ->
+     copy the registration link.
+     Tip: sign in through the LAN address before copying, so the link contains the
+     LAN address instead of localhost.
+
+3.5. A stable access address (recommended)
+  1. If this PC's IP changes, bookmarked links break. Either reserve a static IP /
+     DHCP lease for this PC in the router, or set serverRoot in config.json to a
+     fixed address (e.g. http://192.168.1.100:8088 or an internal domain name) and
+     restart the program.
+  2. Invite links and the links inside push messages use serverRoot (or the "link
+     address" in the push settings), so one change keeps every link consistent.
+
+4. Fixed port and configuration file
+  The port is 8088 and the configuration file is config.json.
+  If you change the port, the tray menu reads the new value automatically; open
+  the new port in the firewall as well.
+  Address format: http://this-pc-ip:8088/
+  Every option in config.json has a Chinese comment (// ...). You can edit it and
+  restart the program; comments do not affect parsing.
+
+5. Board templates (Chinese and English)
+  1. When creating a board you can pick one of 13 built-in templates: meeting
+     agenda, project tasks, sales pipeline, personal tasks, sprint planning,
+     roadmap, team retrospective, OKR and more.
+  2. Templates follow the interface language: Chinese UI shows Chinese templates,
+     English UI shows English templates. Switch under bottom-left user name ->
+     Settings -> Language.
+  3. Templates you create and save yourself are shown in both languages.
+
+6. Due status (calculated automatically)
+  1. "Due status" is a read-only formula property derived from date properties:
+     Overdue / Due today / Due soon / On track / No date.
+  2. Add it from the board's "Add property" menu.
+  3. It prefers a date property whose name contains "due / deadline / 截止 / 到期";
+     otherwise it uses the board's first date property.
+  4. Cards show colored labels: red overdue, orange due today, yellow due soon,
+     green on track.
+  5. The "due soon" window follows the lead-days setting in the reminder panel
+     (default 7 days).
+
+7. Filtering cards that are due soon
+  1. Board toolbar -> "Filter" -> add a condition.
+  2. Choose the "Due status" property to filter by any status above.
+  3. Any date property also offers "Due within N days" and "Overdue".
+  4. Conditions can be combined with other property filters; the view updates live.
+
+8. Right-hand reminder panel and top bar
+  1. Layout: the left board navigation stays full height; the reminder panel sits
+     on the right of the board. The top bar spans only the board and the panel.
+  2. Toggle the panel with the "Reminders" button at the right end of the top bar.
+     It opens automatically when there are overdue/soon/pending cards and collapses
+     when there are none; you can still open it manually to change settings.
+  3. Drag the divider between the board and the panel to resize; the width is
+     remembered.
+  4. The panel groups cards by board and shows three numbers per board:
+     overdue (red), due soon (orange), pending (purple).
+     Three checkboxes control the lists:
+       - Overdue / Due soon: cards that have a date;
+       - Pending: cards whose selected date property is empty.
+     Enabling "Pending" turns the other two off; disabling it restores them.
+  5. Clicking a card jumps to that board and highlights the card with a glowing
+     ring until the mouse moves over it. If the card is hidden by the current
+     filter, its detail dialog opens instead.
+  6. The gear icon opens per-account settings:
+     push switch, push channel, lead days, scan interval, push weekdays and time
+     window, webhook and secret, "Push now", link address, per-board property
+     statistics, per-board due/pending date property, actual-completion-date
+     rules, workday span settings, and colors for overdue/soon/pending text and
+     card borders.
+  7. The lead-days value also defines the "due soon" range.
+  8. Reminders refresh on a timer; shared read-only links do not show the panel.
+  9. Top hint bar:
+     - Enabled by default (topBarEnabled = true in config.json; set false to hide).
+     - Shows "Busy lately" when something is overdue/soon, otherwise "Nothing
+       scheduled", followed by a random quote that changes on each page refresh.
+     - Single line; long text scrolls after the message and pauses on hover.
+     - Click the text to hide it (remembered); click the same blank area to show
+       it again.
+     - Quotes live in quotes.txt next to the program ([idle] and [busy] sections,
+       one per line); save and refresh the page, no restart needed.
+     - The date strip is centered and adapts to the text on both sides. It shows
+       the Gregorian date/weekday, the sexagenary year and lunar date (e.g.
+       "Bingwu year, 10th lunar month, 15th day"), and the leave badge.
+
+8.5. Actual completion date (automatic)
+  1. Every board gets a date property "Actual completion date".
+  2. When a card's status becomes "Completed", today's date is written
+     automatically; changing to any other status clears it.
+  3. Gear -> "Actual completion date - <board>" enables it per board and lets you
+     choose the status property, the completed option and the date property.
+  4. Completed cards are removed from the overdue/soon lists and lose their due
+     labels; the "Due status" property shows "On track".
+  5. These per-board settings are stored per account.
+
+8.6. Workdays (business-day span property)
+  1. Board -> "Add property" -> "Workdays": a formula property that counts
+     business days between two date properties (inclusive, skipping Saturdays and
+     Sundays). Cards and the table view show the number of days.
+  2. Choose the start/end date properties per board under gear ->
+     "Workdays - <board>". If not set, the first two date properties are used.
+  3. Boards with fewer than two date properties do not show this setting.
+
+9. Due push (multi-channel, per account)
+  1. Channels (gear -> "Push channel"):
+       Feishu (custom bot webhook, optional signature secret)
+       WeCom (WeChat Work group bot webhook)
+       DingTalk (group bot webhook; signing secret goes in the secret field)
+       ServerChan / FTQQ (https://sctapi.ftqq.com/SENDKEY.send)
+       Custom JSON (POST {"text": "..."} to your own endpoint; secret is sent as
+       the "secret" field when set)
+     The webhook field shows a matching example when you switch channels.
+  2. Schedule:
+       Push weekdays: check Monday-Sunday (default Monday-Friday);
+       Push window: only send inside this hour range (default 09:00-17:00);
+       Mode: interval (check every N minutes) or daily at a fixed time.
+  3. Content: overdue / due soon / pending can be toggled. The numbers come from
+     the same server-side calculation as the reminder panel, so push and panel
+     always agree.
+  4. Link address: card links in the message use serverRoot by default; you can
+     override it in the gear panel. A fixed address (section 3.5) is recommended.
+  5. "Push now" ignores weekdays, the time window, the mode and daily de-duping,
+     sending the current content immediately for testing.
+  6. If no webhook is configured, the system default in config.json is used.
+  7. The same card is pushed at most once per day; changing its due date makes it
+     eligible again.
+  8. Failures are logged in data\focalboard.log (look for "due reminder").
+
+9.5. Leave assistant (annual leave / compensatory leave)
+  Entry point: the badge on the top date strip (e.g. "Comp 1 - Annual 5").
+  1. Left-click the badge to open the month calendar; click outside to close.
+     Right-click to pin a floating window that can be dragged by its title bar;
+     closing it resets the position.
+  2. Calendar cells show the day, lunar date and solar term (bold), statutory
+     holiday "off" / make-up workday "work" markers, and your own leave marks
+     (overtime, comp leave, annual leave; half days shown as 1/2, colors
+     configurable).
+  3. Add an entry: four actions:
+       Overtime (days): adds to the comp-leave balance;
+       Grant annual leave: adds days manually (automatic grants still apply);
+       Take leave (annual / comp): deducts from the balance and is rejected with
+       the remaining amount when insufficient;
+       Void: strikes out an entry so it no longer counts.
+     Leave can be taken in half-day steps (0.5).
+  4. Automatic annual leave: based on the work-start date and statutory seniority
+     tiers (under 1 year: none; 1-10 years: 5 days; 10-20 years: 10 days;
+     20+ years: 15 days). The server grants it once per year, catching up on the
+     first visit or when a grant date passes.
+  5. Expiry: not "12 months from the record" but "accumulation year + N years on
+     a fixed month/day". Choose N (same year / next year / +2 / +3) plus month and
+     day, separately for annual and comp leave. Examples:
+       comp days earned in 2026 with "next year, Apr 30" expire on 2027-04-30;
+       annual days earned in 2026 with "next year, Mar 31" expire on 2027-03-31.
+     Defaults: annual next-year Mar 31, comp next-year Apr 30. Old records stored
+     under the 12-month rule are rewritten automatically when read.
+  6. Deduction order: first-expire-first-out (FIFO), so the soonest-expiring
+     balance is consumed first.
+  7. Balances: the dialog shows "X workdays until expiry" (weekdays only); expired
+     amounts are struck through in the ledger.
+  8. Ledger and export: switch between Add / Ledger / Settings. Entries can be
+     voided individually; "Export" downloads a plain-text ledger with date, type,
+     days, expiry date and note.
+  9. Board calendar overlay: the calendar view shows your own leave marks and solar
+     terms. Holiday names and make-up workdays are fetched from the public
+     government schedule and cached under data (offline use keeps the cache).
+
+9.6. Workflow view (boards split into rows)
+  1. In the toolbar, choose an option-based property in the "Workflow" dropdown;
+     the board splits into one row per option.
+  2. Each row has a prominent header with the workflow name and card count; click
+     it to collapse/expand.
+  3. Click a workflow name to rename it (edit permission required); Enter or click
+     elsewhere saves.
+  4. "+ New workflow" adds an option to the current property.
+  5. Cards cannot be dragged between workflows, only within one.
+  6. Toolbar workflow labels act as filters: click to hide, click again to show;
+     "Show all" displays everything.
+  7. Workflow filtering applies to board, table, gallery and calendar views.
+
+9.7. Compact mode and hidden cards
+  1. "Compact mode" shrinks cards to a title plus one property chosen in the
+     dropdown next to it; click again to restore.
+  2. Hover a card and click the eye icon to hide it.
+  3. "Show hidden (n)" appears in the toolbar; open it to restore cards one by one.
+  4. Hidden/compact settings are stored per view.
+
+9.8. Member panel (administrators only)
+  1. The first registered account is the administrator. Sign in and open
+     bottom-left user name -> "Member panel".
+  2. See all registered members and their online/offline state.
+  3. Add accounts, set a new password for any account (including your own), and
+     remove regular accounts.
+  4. Administrators have the same board editing rights as regular members.
+
+10. Data and backup
+  All data lives in the data folder:
+    data\focalboard.db      database (accounts, boards, cards)
+    data\files\             uploaded attachments
+    data\focalboard.log     runtime log
+    data\launcher.ini       tray settings (auto-start)
+    data\holidays-*.json    cached statutory holiday data (re-fetched if deleted)
+  Leave records, push settings and member preferences are stored in the database.
+  Stop the program before copying the whole data folder. To move to another PC,
+  copy the entire program folder including data.
+
+11. What is new in this build
+  1. Login fix: signing in goes straight to the boards.
+  2. Leave assistant: top-bar badge, popup/pinned calendar, add/ledger/settings/
+     export, automatic and manual annual leave, configurable expiry year and
+     month/day, workday countdown, calendar overlay with solar terms.
+  3. Push upgrade: Feishu, WeCom, DingTalk, ServerChan, custom JSON; push
+     weekdays, time window, daily mode and "Push now".
+  4. Workdays (business-day) formula property.
+  5. Top date strip centered, with sexagenary year and lunar date; hint bar on by
+     default.
+  6. Reminder gear consolidates completion-date, workdays and push settings.
+  After upgrading, press Ctrl+F5. Existing data needs no migration.
+
+12. Exiting
+  Tray menu -> "Exit" stops the server (including auto-started instances).
+  You can also run Focalboard.exe --quit.
+  After auto-start the program stays in the background; resource usage is low.
+
+13. Security notes
+  Traffic is plain HTTP; use it only on a trusted LAN. For internet access put an
+  HTTPS reverse proxy (Nginx / Caddy) in front and never expose port 8088 directly.
+  Webhook URLs and secrets grant bot permissions; do not share config.json.
+  Back up the data folder regularly.
+
+14. FAQ
+  - Port already in use: stop the program using 8088 or change "port" in
+    config.json.
+  - "Start failed" right after exiting: the new build waits for the port to be
+    released. If it still fails, the dialog shows recent log lines; a common cause
+    is invalid JSON in config.json (e.g. "ture" instead of "true").
+  - Windows SmartScreen: "More info" -> "Run anyway".
+  - Colleagues cannot connect: same LAN, firewall allowed, network profile not
+    "Public".
+  - Registration dialog does not open: an account already exists; sign in through
+    the LAN address and use "Invite user".
+  - Login stays on the login page: fixed in this build; press Ctrl+F5 or clear the
+    site cache if you still see it.
+  - Settings do not take effect: the browser cached an old front-end bundle;
+    press Ctrl+F5.
+  - Badge shows 0 / no annual leave: set the work-start date in the leave dialog
+    settings, or seniority is under 1 year / this year's balance is used up.
+  - No holiday "off/work" markers: the server needs outbound access to fetch the
+    public holiday schedule; it is cached after the first success.
+  - No push received: check the push switch, webhook, secret, weekday and time
+    window; use "Push now" to bypass them and inspect data\focalboard.log.
+  - Reminder list empty: no due cards, or the lead-days value is too small.
+  - Forgot password: no email recovery; an administrator must handle the database.
+    Back it up first.
+  - Disable auto-start: tray menu toggle, or delete the FocalboardLAN value under
+    HKCU\Software\Microsoft\Windows\CurrentVersion\Run.
+  - Auto-start does nothing: the folder was moved; run Focalboard.exe once in the
+    new location.
+  - Double-click does nothing: only one instance per port; if another Windows
+    session runs it, this session just opens the browser.
+  - Templates in one language only: templates follow the UI language; switch it
+    and reopen "Create board".
+  - Due status shows "No date": the card has no due date or the board has no date
+    property.
+
+15. Technical notes
+  Server built from Focalboard v8.0.0 sources, SQLite single-file database, native
+  account login (authMode = native), listening on 0.0.0.0:8088. All users belong
+  to one team; boards can be shared per member.
+  Custom endpoints: /api/v2/leaves/* (summary, records, settings, export),
+  /api/v2/top-bar/lunar (lunar date and solar terms); statutory holidays are
+  proxied from a public source and cached; due push is dispatched by the
+  duereminder service for feishu/wecom/dingtalk/ftqq/custom.
+  Leave data is stored per account in server-side user preferences (keys
+  leaveRecords / leaveSettings), independent of the browser.
+  config.json supports // and /* */ comments. The tray launcher runs as the
+  current user; auto-start uses an HKCU entry and needs no administrator rights.

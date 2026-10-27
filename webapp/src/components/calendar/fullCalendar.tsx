@@ -1,7 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React, {useCallback, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {useIntl} from 'react-intl'
 
 import FullCalendar, {EventChangeArg, EventInput, EventContentArg, DayCellContentArg} from '@fullcalendar/react'
@@ -16,6 +16,9 @@ import mutator from '../../mutator'
 import {Board, IPropertyTemplate} from '../../blocks/board'
 import {BoardView} from '../../blocks/boardView'
 import {Card} from '../../blocks/card'
+import {HolidayInfo, loadHolidays, readHolidayCache, toDateKey} from '../../holidays'
+import octoClient from '../../octoClient'
+import {LeaveRecord, LeaveSettings, LunarDay, getLunarYear, leaveColor, leaveDayMarks, leaveMarkLabel} from '../../leaves'
 import {DateProperty} from '../../properties/date/date'
 import propsRegistry from '../../properties'
 import Tooltip from '../../widgets/tooltip'
@@ -40,6 +43,7 @@ type Props = {
     readonly: boolean
     initialDate?: Date
     dateDisplayProperty?: IPropertyTemplate
+    dateDisplayProperties?: IPropertyTemplate[]
     showCard: (cardId: string) => void
     addCard: (properties: Record<string, string>) => void
 }
@@ -78,6 +82,55 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
     const canAddCards = useHasCurrentBoardPermissions([Permission.ManageBoardCards])
     const [showConfirmationDialogBox, setShowConfirmationDialogBox] = useState<boolean>(false)
     const [cardItem, setCardItem] = useState<Card>()
+    const [holidays, setHolidays] = useState<Record<string, HolidayInfo>>(() => readHolidayCache())
+    const [lunar, setLunar] = useState<Record<string, LunarDay>>({})
+    const [lunarYear, setLunarYear] = useState(new Date().getFullYear())
+    const [leaveMarks, setLeaveMarks] = useState<Record<string, LeaveRecord[]>>({})
+    const [leaveSettings, setLeaveSettings] = useState<LeaveSettings|undefined>(undefined)
+
+    useEffect(() => {
+        let cancelled = false
+        loadHolidays().then((days) => {
+            if (!cancelled) {
+                setHolidays(days)
+            }
+        }).catch(() => {
+            // calendar still works without holiday decorations
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    useEffect(() => {
+        let cancelled = false
+        Promise.all([getLunarYear(lunarYear - 1), getLunarYear(lunarYear), getLunarYear(lunarYear + 1)]).then((maps) => {
+            if (!cancelled) {
+                setLunar(Object.assign({}, maps[0], maps[1], maps[2]))
+            }
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [lunarYear])
+
+    useEffect(() => {
+        let cancelled = false
+        const reload = () => {
+            octoClient.getLeaveSummary().then((summary) => {
+                if (!cancelled && summary) {
+                    setLeaveMarks(leaveDayMarks(summary.records))
+                    setLeaveSettings(summary.settings)
+                }
+            })
+        }
+        reload()
+        window.addEventListener('focalboard-leaves-updated', reload)
+        return () => {
+            cancelled = true
+            window.removeEventListener('focalboard-leaves-updated', reload)
+        }
+    }, [])
 
     const visiblePropertyTemplates = useMemo(() => (
         board.cardProperties.filter((template: IPropertyTemplate) => activeView.fields.visiblePropertyIds.includes(template.id))
@@ -88,42 +141,82 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
         initialDate = new Date()
     }
 
+    const dateProperties = useMemo(() => {
+        if (props.dateDisplayProperties && props.dateDisplayProperties.length > 0) {
+            return props.dateDisplayProperties
+        }
+        return dateDisplayProperty ? [dateDisplayProperty] : []
+    }, [props.dateDisplayProperties, dateDisplayProperty])
+
     const isEditable = useCallback((): boolean => {
-        if (readonly || !dateDisplayProperty || propsRegistry.get(dateDisplayProperty.type).isReadOnly) {
+        const primary = dateProperties[0]
+        if (readonly || dateProperties.length > 1 || !primary || propsRegistry.get(primary.type).isReadOnly) {
             return false
         }
         return true
-    }, [readonly, dateDisplayProperty])
+    }, [readonly, dateProperties])
 
     const myEventsList = useMemo(() => (
         cards.flatMap((card): EventInput[] => {
-            const property = propsRegistry.get(dateDisplayProperty?.type || 'unknown')
-
-            let dateFrom = new Date(card.createAt || 0)
-            let dateTo = new Date(card.createAt || 0)
-            if (property instanceof DatePropertyType) {
-                const dateFromValue = property.getDateFrom(card.fields.properties[dateDisplayProperty?.id || ''], card)
-                if (!dateFromValue) {
-                    return []
-                }
-                dateFrom = dateFromValue
-                const dateToValue = property.getDateTo(card.fields.properties[dateDisplayProperty?.id || ''], card)
-                dateTo = dateToValue || new Date(dateFrom)
-
-                //full calendar end date is exclusive, so increment by 1 day.
-                dateTo.setDate(dateTo.getDate() + 1)
+            if (dateProperties.length === 0) {
+                const created = new Date(card.createAt || 0)
+                const createdEnd = new Date(created.getTime() + oneDay)
+                return [{
+                    id: card.id,
+                    title: card.title,
+                    extendedProps: {icon: card.fields.icon, cardId: card.id, datePropertyId: ''},
+                    properties: card.fields.properties,
+                    allDay: true,
+                    start: created,
+                    end: createdEnd,
+                }]
             }
+
+            // One bar per card: from the earliest displayed date to the latest one,
+            // so start/end property pairs render like a Gantt bar.
+            let barStart: Date | undefined
+            let barEnd: Date | undefined
+            let primaryPropertyId = ''
+            dateProperties.forEach((template) => {
+                const property = propsRegistry.get(template.type)
+                if (!(property instanceof DatePropertyType)) {
+                    return
+                }
+                const value = card.fields.properties[template.id]
+                const dateFrom = property.getDateFrom(value, card)
+                if (!dateFrom) {
+                    return
+                }
+                const dateTo = property.getDateTo(value, card) || dateFrom
+                if (!barStart || dateFrom.getTime() < barStart.getTime()) {
+                    barStart = dateFrom
+                    primaryPropertyId = template.id
+                }
+                if (!barEnd || dateTo.getTime() > barEnd.getTime()) {
+                    barEnd = dateTo
+                }
+            })
+            if (!barStart || !barEnd) {
+                return []
+            }
+            const barEndExclusive = new Date(barEnd)
+            barEndExclusive.setDate(barEndExclusive.getDate() + 1)
+
             return [{
                 id: card.id,
                 title: card.title,
-                extendedProps: {icon: card.fields.icon},
+                extendedProps: {
+                    icon: card.fields.icon,
+                    cardId: card.id,
+                    datePropertyId: primaryPropertyId,
+                },
                 properties: card.fields.properties,
                 allDay: true,
-                start: dateFrom,
-                end: dateTo,
+                start: barStart,
+                end: barEndExclusive,
             }]
         })
-    ), [cards, dateDisplayProperty])
+    ), [cards, dateProperties])
 
     const visibleBadges = activeView.fields.visiblePropertyIds.includes(Constants.badgesColumnId)
 
@@ -153,13 +246,15 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
 
     const renderEventContent = (eventProps: EventContentArg): JSX.Element|null => {
         const {event} = eventProps
-        const card = cards.find((o) => o.id === event.id) || cards[0]
+        const cardId = (event.extendedProps.cardId as string) || event.id
+        const card = cards.find((o) => o.id === cardId) || cards[0]
 
         return (
             <>
                 <div
                     className='EventContent'
-                    onClick={() => props.showCard(event.id)}
+                    data-card-id={cardId}
+                    onClick={() => props.showCard(cardId)}
                 >
                     {!props.readonly &&
                     <MenuWrapper
@@ -217,11 +312,13 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
         const startDate = new Date(event.start.getTime())
         const endDate = new Date(event.end.getTime())
         const dateProperty = createDatePropertyFromCalendarDates(startDate, endDate)
-        const card = cards.find((o) => o.id === event.id)
-        if (card && dateDisplayProperty) {
-            mutator.changePropertyValue(board.id, card, dateDisplayProperty.id, JSON.stringify(dateProperty))
+        const cardId = (event.extendedProps.cardId as string) || event.id
+        const propertyId = (event.extendedProps.datePropertyId as string) || dateProperties[0]?.id
+        const card = cards.find((o) => o.id === cardId)
+        if (card && propertyId) {
+            mutator.changePropertyValue(board.id, card, propertyId, JSON.stringify(dateProperty))
         }
-    }, [cards, dateDisplayProperty])
+    }, [cards, dateProperties, board.id])
 
     const onNewEvent = useCallback((args: {start: Date, end: Date}) => {
         let dateProperty: DateProperty
@@ -235,12 +332,13 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
         }
 
         const properties: Record<string, string> = {}
-        if (dateDisplayProperty) {
-            properties[dateDisplayProperty.id] = JSON.stringify(dateProperty)
+        const targetProperty = dateProperties[0]
+        if (targetProperty) {
+            properties[targetProperty.id] = JSON.stringify(dateProperty)
         }
 
         props.addCard(properties)
-    }, [props.addCard, dateDisplayProperty])
+    }, [props.addCard, dateProperties])
 
     const toolbar = useMemo(() => ({
         left: 'title',
@@ -255,6 +353,10 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
     }), [])
 
     const dayCellContent = useCallback((args: DayCellContentArg): JSX.Element|null => {
+        const key = toDateKey(args.date)
+        const holiday = holidays[key]
+        const lunarInfo = lunar[key]
+        const marks = leaveMarks[key] || []
         return (
             <div className={'dateContainer ' + (canAddCards ? 'with-plus' : '')}>
                 <div
@@ -263,12 +365,30 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
                 >
                     {'+'}
                 </div>
-                <div className='dateDisplay'>
-                    {args.dayNumberText}
+                <div className='dateMeta'>
+                    <div className='dateDisplay'>
+                        {args.dayNumberText}
+                    </div>
+                    {holiday &&
+                        <span className={`holidayTag ${holiday.offDay ? 'isOff' : 'isWork'}`}>
+                            {holiday.offDay ? holiday.name : intl.formatMessage({id: 'calendar.makeupWorkday', defaultMessage: '班'})}
+                        </span>}
+                    {!holiday && lunarInfo?.term &&
+                        <span className='termTag' style={{color: leaveColor(leaveSettings, 'term')}}>{lunarInfo.term}</span>}
+                    {marks.map((record) => {
+                        const label = leaveMarkLabel(record)
+                        return label.text ? (
+                            <span
+                                key={record.id}
+                                className='leaveTag'
+                                style={{color: leaveColor(leaveSettings, label.colorKey)}}
+                            >{label.text}</span>
+                        ) : null
+                    })}
                 </div>
             </div>
         )
-    }, [dateDisplayProperty, canAddCards])
+    }, [canAddCards, holidays, lunar, leaveMarks, leaveSettings, intl])
 
     return (
         <div
@@ -291,6 +411,7 @@ const CalendarFullView = (props: Props): JSX.Element|null => {
                 selectable={isSelectable}
                 selectMirror={true}
                 select={onNewEvent}
+                datesSet={() => setLunarYear(new Date().getFullYear())}
             />
             {showConfirmationDialogBox && <ConfirmationDialogBox dialogBox={confirmDialogProps}/>}
         </div>

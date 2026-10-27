@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"log"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -69,14 +71,25 @@ type Configuration struct {
 
 	NotifyFreqCardSeconds  int `json:"notify_freq_card_seconds" mapstructure:"notify_freq_card_seconds"`
 	NotifyFreqBoardSeconds int `json:"notify_freq_board_seconds" mapstructure:"notify_freq_board_seconds"`
+
+	DueReminderEnabled         bool   `json:"dueReminderEnabled" mapstructure:"dueReminderEnabled"`
+	DueReminderLeadDays        int    `json:"dueReminderLeadDays" mapstructure:"dueReminderLeadDays"`
+	DueReminderIntervalMinutes int    `json:"dueReminderIntervalMinutes" mapstructure:"dueReminderIntervalMinutes"`
+	DueReminderFeishuWebhook   string `json:"dueReminderFeishuWebhook" mapstructure:"dueReminderFeishuWebhook"`
+	DueReminderFeishuSecret    string `json:"dueReminderFeishuSecret" mapstructure:"dueReminderFeishuSecret"`
+
+	TopBarEnabled    bool   `json:"topBarEnabled" mapstructure:"topBarEnabled"`
+	TopBarQuotesFile string `json:"topBarQuotesFile" mapstructure:"topBarQuotesFile"`
 }
 
 // ReadConfigFile read the configuration from the filesystem.
 func ReadConfigFile(configFilePath string) (*Configuration, error) {
 	if configFilePath == "" {
-		viper.SetConfigFile("./config.json")
-	} else {
-		viper.SetConfigFile(configFilePath)
+		configFilePath = "./config.json"
+	}
+	rawConfig, err := os.ReadFile(configFilePath)
+	if err != nil {
+		return nil, err
 	}
 
 	viper.SetEnvPrefix("focalboard")
@@ -103,6 +116,13 @@ func ReadConfigFile(configFilePath string) (*Configuration, error) {
 	viper.SetDefault("AuthMode", "native")
 	viper.SetDefault("NotifyFreqCardSeconds", 120)    // 2 minutes after last card edit
 	viper.SetDefault("NotifyFreqBoardSeconds", 86400) // 1 day after last card edit
+	viper.SetDefault("DueReminderEnabled", false)
+	viper.SetDefault("DueReminderLeadDays", 3)
+	viper.SetDefault("DueReminderIntervalMinutes", 60)
+	viper.SetDefault("DueReminderFeishuWebhook", "")
+	viper.SetDefault("DueReminderFeishuSecret", "")
+	viper.SetDefault("TopBarEnabled", false)
+	viper.SetDefault("TopBarQuotesFile", "./quotes.txt")
 	viper.SetDefault("EnableDataRetention", false)
 	viper.SetDefault("FeatureFlags", map[string]string{})
 	viper.SetDefault("DataRetentionDays", 365) // 1 year is default
@@ -111,9 +131,18 @@ func ReadConfigFile(configFilePath string) (*Configuration, error) {
 	viper.SetDefault("ShowEmailAddress", false)
 	viper.SetDefault("ShowFullName", false)
 
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
+	viper.SetConfigType("json")
+	err = viper.ReadConfig(bytes.NewReader(stripJSONComments(rawConfig)))
+	if err != nil {
 		return nil, err
+	}
+
+	// Bind every known key to FOCALBOARD_<KEY> so Docker (or the host shell)
+	// can override config.json values with environment variables.
+	for _, key := range viper.AllKeys() {
+		if err := viper.BindEnv(key); err != nil {
+			return nil, err
+		}
 	}
 
 	configuration := Configuration{}
@@ -123,10 +152,72 @@ func ReadConfigFile(configFilePath string) (*Configuration, error) {
 		return nil, err
 	}
 
+	// viper's defaults use camelCase keys while mapstructure uses snake_case,
+	// so session lifetimes fall back to zero when config.json omits them. A
+	// zero expiry makes every session unmatchable ("no rows"), which blocks
+	// first-time admin accounts behind the join-board dialog.
+	if configuration.SessionExpireTime <= 0 {
+		configuration.SessionExpireTime = 60 * 60 * 24 * 30
+	}
+	if configuration.SessionRefreshTime <= 0 {
+		configuration.SessionRefreshTime = 60 * 60 * 5
+	}
+
 	log.Println("readConfigFile")
 	log.Printf("%+v", removeSecurityData(configuration))
 
 	return &configuration, nil
+}
+
+// stripJSONComments removes // and /* */ comments outside of string literals,
+// so config.json can be annotated with notes while staying valid JSON.
+func stripJSONComments(data []byte) []byte {
+	out := make([]byte, 0, len(data))
+	inString := false
+	escaped := false
+	for i := 0; i < len(data); i++ {
+		c := data[i]
+		if inString {
+			out = append(out, c)
+			if escaped {
+				escaped = false
+			} else if c == '\\' {
+				escaped = true
+			} else if c == '"' {
+				inString = false
+			}
+			continue
+		}
+		if c == '"' {
+			inString = true
+			out = append(out, c)
+			continue
+		}
+		if c == '/' && i+1 < len(data) {
+			if data[i+1] == '/' {
+				for i < len(data) && data[i] != '\n' {
+					i++
+				}
+				if i < len(data) {
+					out = append(out, '\n')
+				}
+				continue
+			}
+			if data[i+1] == '*' {
+				i += 2
+				for i+1 < len(data) && !(data[i] == '*' && data[i+1] == '/') {
+					if data[i] == '\n' {
+						out = append(out, '\n')
+					}
+					i++
+				}
+				i++
+				continue
+			}
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 func removeSecurityData(config Configuration) Configuration {

@@ -1,9 +1,41 @@
 package app
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/mattermost/focalboard/server/model"
 	mmModel "github.com/mattermost/mattermost/server/public/model"
 )
+
+func (a *App) systemAdminID() string {
+	adminID, err := a.store.GetSystemSetting(model.SystemAdminUserIDKey)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(adminID)
+}
+
+func (a *App) IsSystemAdmin(userID string) bool {
+	adminID := a.systemAdminID()
+	return adminID != "" && userID == adminID
+}
+
+// DeleteUser soft-deletes an account and clears every active session so the
+// user is signed out immediately.
+func (a *App) DeleteUser(userID string) error {
+	if a.IsSystemAdmin(userID) {
+		return errors.New("the administrator account cannot be removed")
+	}
+	if err := a.store.SoftDeleteUser(userID); err != nil {
+		return err
+	}
+	return a.store.DeleteUserSessions(userID)
+}
+
+func (a *App) GetOnlineUserIDs(updatedSecondsAgo int64) ([]string, error) {
+	return a.store.GetOnlineUserIDs(updatedSecondsAgo)
+}
 
 func (a *App) GetTeamUsers(teamID string, asGuestID string) ([]*model.User, error) {
 	return a.store.GetUsersByTeam(teamID, asGuestID, a.config.ShowEmailAddress, a.config.ShowFullName)

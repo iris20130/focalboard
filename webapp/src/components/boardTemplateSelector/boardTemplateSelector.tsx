@@ -20,7 +20,7 @@ import {useAppDispatch, useAppSelector} from '../../store/hooks'
 import TelemetryClient, {TelemetryActions, TelemetryCategory} from '../../telemetry/telemetryClient'
 
 import './boardTemplateSelector.scss'
-import {OnboardingBoardTitle} from '../cardDetail/cardDetail'
+import {isOnboardingBoardTitle} from '../cardDetail/cardDetail'
 import {IUser, UserConfigPatch} from '../../user'
 import {getMe, patchProps} from '../../store/users'
 import {BaseTourSteps, TOUR_BASE} from '../onboardingTour'
@@ -79,7 +79,20 @@ const BoardTemplateSelector = (props: Props) => {
 
     const unsortedTemplates = useAppSelector(getTemplates)
     const templates = useMemo(() => Object.values(unsortedTemplates).sort((a: Board, b: Board) => a.createAt - b.createAt), [unsortedTemplates])
-    const allTemplates = globalTemplates.concat(templates)
+
+    // Built-in templates are seeded in both English and Simplified Chinese.
+    // Custom templates are not marked and stay visible in every language.
+    const isZH = intl.locale.toLowerCase().startsWith('zh')
+    const matchesLocale = useCallback((template: Board) => {
+        if (template.createdBy !== Constants.SystemUserID) {
+            return true
+        }
+        const templateLocale = (template.properties?.templateLocale as string) || 'en'
+        return templateLocale === (isZH ? 'zh' : 'en')
+    }, [isZH])
+    const localeGlobalTemplates = useMemo(() => globalTemplates.filter(matchesLocale), [globalTemplates, matchesLocale])
+    const localeTemplates = useMemo(() => templates.filter(matchesLocale), [templates, matchesLocale])
+    const allTemplates = useMemo(() => localeGlobalTemplates.concat(localeTemplates), [localeGlobalTemplates, localeTemplates])
 
     const resetTour = async () => {
         TelemetryClient.trackEvent(TelemetryCategory, TelemetryActions.StartTour)
@@ -110,7 +123,7 @@ const BoardTemplateSelector = (props: Props) => {
         const boardsAndBlocks = await mutator.addBoardFromTemplate(currentTeam?.id || Constants.globalTeamId, intl, showBoard, () => showBoard(currentBoardId), activeTemplate.id, currentTeam?.id)
         const board = boardsAndBlocks.boards[0]
         await mutator.updateBoard({...board, channelId: props.channelId || ''}, board, 'linked channel')
-        if (activeTemplate.title === OnboardingBoardTitle) {
+        if (isOnboardingBoardTitle(activeTemplate.title)) {
             resetTour()
         }
     }
@@ -118,10 +131,10 @@ const BoardTemplateSelector = (props: Props) => {
     const [activeTemplate, setActiveTemplate] = useState<Board>(allTemplates[0])
 
     useEffect(() => {
-        if (!activeTemplate) {
-            setActiveTemplate(templates.concat(globalTemplates)[0])
+        if (!activeTemplate || !allTemplates.some((template) => template.id === activeTemplate.id)) {
+            setActiveTemplate(allTemplates[0])
         }
-    }, [templates, globalTemplates])
+    }, [allTemplates])
 
     if (!allTemplates) {
         return <div/>

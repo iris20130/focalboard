@@ -80,6 +80,7 @@ const GalleryCard = (props: Props) => {
         <>
             <div
                 className={className}
+                data-card-id={card.id}
                 onClick={(e: React.MouseEvent) => props.onClick(e, card)}
                 style={{opacity: isDragging ? 0.5 : 1}}
                 ref={cardRef}

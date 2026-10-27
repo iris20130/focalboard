@@ -93,6 +93,7 @@ export const optionsByType: Map<string, Option[]> = new Map([
         Options.percentNotEmpty, Options.countValue, Options.countUniqueValue]],
     ['checkbox', [Options.countChecked, Options.countUnchecked, Options.percentChecked, Options.percentUnchecked]],
     ['number', [Options.sum, Options.average, Options.median, Options.min, Options.max, Options.range]],
+    ['workdays', [Options.sum, Options.average, Options.median, Options.min, Options.max, Options.range]],
     ['date', [Options.earliest, Options.latest, Options.dateRange]],
     ['createdTime', [Options.earliest, Options.latest, Options.dateRange]],
     ['updatedTime', [Options.earliest, Options.latest, Options.dateRange]],

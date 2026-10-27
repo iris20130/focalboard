@@ -2,11 +2,14 @@ package app
 
 import (
 	"io"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/mattermost/focalboard/server/auth"
 	"github.com/mattermost/focalboard/server/services/config"
+	"github.com/mattermost/focalboard/server/services/holidays"
 	"github.com/mattermost/focalboard/server/services/metrics"
 	"github.com/mattermost/focalboard/server/services/notify"
 	"github.com/mattermost/focalboard/server/services/permissions"
@@ -67,6 +70,7 @@ type App struct {
 	permissions         permissions.PermissionsService
 	blockChangeNotifier *utils.CallbackQueue
 	servicesAPI         servicesAPI
+	holidays            *holidays.Service
 
 	cardLimitMux sync.RWMutex
 	cardLimit    int
@@ -94,9 +98,26 @@ func New(config *config.Configuration, wsAdapter ws.Adapter, services Services) 
 		permissions:         services.Permissions,
 		blockChangeNotifier: utils.NewCallbackQueue("blockChangeNotifier", blockChangeNotifierQueueSize, blockChangeNotifierPoolSize, services.Logger),
 		servicesAPI:         services.ServicesAPI,
+		holidays:            holidays.New(filepath.Join(dataDirFromConfig(config), "holidays")),
 	}
 	app.initialize(services.SkipTemplateInit)
 	return app
+}
+
+// dataDirFromConfig derives the data folder from the sqlite database path so
+// caches land next to the database regardless of the working directory.
+func dataDirFromConfig(config *config.Configuration) string {
+	dsn := strings.TrimSpace(config.DBConfigString)
+	if strings.HasPrefix(dsn, "sqlite3://") {
+		path := strings.TrimPrefix(dsn, "sqlite3://")
+		if index := strings.Index(path, "?"); index >= 0 {
+			path = path[:index]
+		}
+		if dir := filepath.Dir(path); dir != "" && dir != "." {
+			return dir
+		}
+	}
+	return "./data"
 }
 
 func (a *App) CardLimit() int {

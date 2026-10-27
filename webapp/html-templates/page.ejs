@@ -8,6 +8,13 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
 
     <script>window.baseURL = '{{.BaseURL}}'</script>
+    <script>
+        try {
+            if (!localStorage.getItem('language')) {
+                localStorage.setItem('language', 'zh-cn');
+            }
+        } catch (e) {}
+    </script>
     <link rel="icon" href="{{.BaseURL}}/static/favicon.svg?v=1" />
 </head>
 

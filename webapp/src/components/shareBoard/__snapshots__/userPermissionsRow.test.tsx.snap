@@ -259,6 +259,9 @@ exports[`src/components/shareBoard/userPermissionsRow should match snapshot in p
     <div
       class="user-item__content"
     >
+      <img
+        class="user-item__img"
+      />
       <div
         class="ml-3"
       >
@@ -510,6 +513,9 @@ exports[`src/components/shareBoard/userPermissionsRow should match snapshot in t
     <div
       class="user-item__content"
     >
+      <img
+        class="user-item__img"
+      />
       <div
         class="ml-3"
       >

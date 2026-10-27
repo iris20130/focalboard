@@ -24,7 +24,14 @@ func New(store permissions.Store, logger mlog.LoggerIFace) *Service {
 }
 
 func (s *Service) HasPermissionTo(userID string, permission *mmModel.Permission) bool {
-	return false
+	if permission == nil {
+		return false
+	}
+	adminID, err := s.store.GetSystemSetting(model.SystemAdminUserIDKey)
+	if err != nil {
+		return false
+	}
+	return adminID != "" && userID == adminID && permission.Id == model.PermissionManageSystem.Id
 }
 
 func (s *Service) HasPermissionToTeam(userID, teamID string, permission *mmModel.Permission) bool {
@@ -32,7 +39,11 @@ func (s *Service) HasPermissionToTeam(userID, teamID string, permission *mmModel
 		return false
 	}
 	if permission.Id == model.PermissionManageTeam.Id {
-		return false
+		adminID, err := s.store.GetSystemSetting(model.SystemAdminUserIDKey)
+		if err != nil {
+			return false
+		}
+		return adminID != "" && userID == adminID
 	}
 	return true
 }

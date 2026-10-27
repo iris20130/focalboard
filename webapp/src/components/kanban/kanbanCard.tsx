@@ -1,6 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 import React, {useState, useCallback, useMemo} from 'react'
+import {useRouteMatch} from 'react-router-dom'
 import {useIntl} from 'react-intl'
 
 import {Board, IPropertyTemplate} from '../../blocks/board'
@@ -15,6 +16,8 @@ import PropertyValueElement from '../propertyValueElement'
 import ConfirmationDialogBox, {ConfirmationDialogBoxProps} from '../confirmationDialogBox'
 import './kanbanCard.scss'
 import CardBadges from '../cardBadges'
+import OpenCardTourStep from '../onboardingTour/openCard/open_card'
+import CopyLinkTourStep from '../onboardingTour/copyLink/copy_link'
 import CardActionsMenu from '../cardActionsMenu/cardActionsMenu'
 import CardActionsMenuIcon from '../cardActionsMenu/cardActionsMenuIcon'
 
@@ -38,6 +41,7 @@ const KanbanCard = (props: Props) => {
     const intl = useIntl()
     const [isDragging, isOver, cardRef] = useSortable('card', card, !props.readonly, props.onDrop)
     const visiblePropertyTemplates = props.visiblePropertyTemplates || []
+    const match = useRouteMatch<{boardId: string, viewId: string, cardId?: string}>()
     let className = props.isSelected ? 'KanbanCard selected' : 'KanbanCard'
     if (props.isManualSort && isOver) {
         className += ' dragover'
@@ -81,18 +85,22 @@ const KanbanCard = (props: Props) => {
         }
     }, [props.onClick, card])
 
+    const isOnboardingCard = card.title === 'Create a new card'
+    const showOnboarding = isOnboardingCard && !match.params.cardId && !board.isTemplate && Utils.isFocalboardPlugin()
+
     return (
         <>
             <div
                 ref={props.readonly ? () => null : cardRef}
-                className={`${className}`}
+                className={`${className} ${showOnboarding && OnboardingCardClassName}`}
+                data-card-id={card.id}
                 draggable={!props.readonly}
                 style={{opacity: isDragging ? 0.5 : 1}}
                 onClick={handleOnClick}
             >
                 {!props.readonly &&
                 <MenuWrapper
-                    className={'optionsMenu'}
+                    className={`optionsMenu ${showOnboarding ? 'show' : ''}`}
                     stopPropagationOnToggle={true}
                 >
                     <CardActionsMenuIcon/>
@@ -145,6 +153,8 @@ const KanbanCard = (props: Props) => {
                     </Tooltip>
                 ))}
                 {props.visibleBadges && <CardBadges card={card}/>}
+                {showOnboarding && !match.params.cardId && <OpenCardTourStep/>}
+                {showOnboarding && !match.params.cardId && <CopyLinkTourStep/>}
             </div>
 
             {showConfirmationDialogBox && <ConfirmationDialogBox dialogBox={confirmDialogProps}/>}

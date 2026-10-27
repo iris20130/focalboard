@@ -1,0 +1,337 @@
+.LeaveCalendar {
+    position: fixed;
+    z-index: 1000;
+    width: 320px;
+    padding: 8px 10px 10px;
+    background: rgb(var(--center-channel-bg-rgb));
+    border: 1px solid rgba(var(--center-channel-color-rgb), 0.16);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+    color: rgba(var(--center-channel-color-rgb), 0.8);
+    font-size: 12px;
+    user-select: none;
+
+    &.pinned {
+        .LeaveCalendar__header {
+            cursor: move;
+        }
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+
+        button {
+            border: none;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 2px 5px;
+
+            &:hover {
+                background: rgba(var(--center-channel-color-rgb), 0.08);
+                border-radius: 4px;
+            }
+        }
+    }
+
+    &__title {
+        flex: 1 1 auto;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    &__today {
+        font-size: 11px !important;
+    }
+
+    &__close {
+        font-size: 15px !important;
+    }
+
+    &__balances {
+        display: flex;
+        gap: 12px;
+        padding: 2px 0 6px;
+
+        b {
+            font-size: 13px;
+        }
+
+        .expireHint {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .voided {
+            color: rgba(var(--center-channel-color-rgb), 0.4);
+            text-decoration: line-through;
+        }
+    }
+
+    &__week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        color: rgba(var(--center-channel-color-rgb), 0.5);
+        padding-bottom: 2px;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+    }
+
+    &__cell {
+        position: relative;
+        min-height: 44px;
+        padding: 2px;
+        text-align: center;
+        border-radius: 4px;
+        cursor: pointer;
+        background: rgba(var(--center-channel-color-rgb), 0.02);
+
+        &:hover {
+            background: rgba(var(--center-channel-color-rgb), 0.08);
+        }
+
+        &.out {
+            opacity: 0.35;
+        }
+
+        &.weekend {
+            .LeaveCalendar__num {
+                color: #e8590c;
+            }
+        }
+
+        &.rest {
+            background: rgba(255, 240, 230, 1);
+
+            .LeaveCalendar__num {
+                color: #d9480f;
+            }
+        }
+
+        &.work {
+            background: rgba(var(--center-channel-color-rgb), 0.08);
+        }
+
+        &.today {
+            background: rgb(33, 102, 210);
+
+            .LeaveCalendar__num,
+            .LeaveCalendar__lunar {
+                color: #fff;
+            }
+        }
+    }
+
+    &__num {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    &__lunar {
+        display: block;
+        font-size: 9px;
+        color: rgba(var(--center-channel-color-rgb), 0.5);
+
+        &.term {
+            font-weight: 600;
+        }
+    }
+
+    &__badge {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        font-size: 8px;
+        line-height: 1;
+        padding: 1px 2px;
+        border-radius: 2px;
+        color: #fff;
+
+        &.off {
+            background: #fa5252;
+        }
+
+        &.on {
+            background: #495057;
+        }
+    }
+
+    &__mark {
+        display: block;
+        font-size: 8px;
+        line-height: 1.2;
+        font-weight: 600;
+    }
+
+    &__tabs {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+
+        button {
+            flex: 1 1 auto;
+            border: 1px solid rgba(var(--center-channel-color-rgb), 0.16);
+            background: transparent;
+            color: inherit;
+            border-radius: 4px;
+            padding: 3px 0;
+            cursor: pointer;
+            font-size: 11px;
+
+            &.active {
+                background: rgb(29, 88, 179);
+                border-color: rgb(29, 88, 179);
+                color: #fff;
+            }
+        }
+    }
+
+    &__error {
+        margin-top: 6px;
+        color: #e03131;
+        font-size: 11px;
+    }
+
+    &__panel {
+        margin-top: 8px;
+        padding: 8px;
+        background: rgba(var(--center-channel-color-rgb), 0.04);
+        border-radius: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+
+        .row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 6px;
+
+            label {
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            }
+
+            input[type=date],
+            input[type=text],
+            input[type=number],
+            select {
+                border: 1px solid rgba(var(--center-channel-color-rgb), 0.2);
+                border-radius: 4px;
+                background: rgb(var(--center-channel-bg-rgb));
+                color: inherit;
+                padding: 2px 4px;
+                font-size: 11px;
+            }
+
+            input[type=text] {
+                flex: 1 1 90px;
+                min-width: 80px;
+            }
+
+            input[type=color] {
+                width: 22px;
+                height: 18px;
+                border: none;
+                padding: 0;
+                background: transparent;
+            }
+
+            .save {
+                border: none;
+                border-radius: 4px;
+                background: rgb(29, 88, 179);
+                color: #fff;
+                padding: 3px 10px;
+                cursor: pointer;
+            }
+
+            .hint {
+                color: rgba(var(--center-channel-color-rgb), 0.5);
+                font-size: 10px;
+            }
+        }
+
+        .row.expire {
+            gap: 3px;
+            margin-bottom: 4px;
+            font-size: 11px;
+
+            span {
+                flex: 0 0 auto;
+            }
+
+            select {
+                padding: 1px 2px;
+                font-size: 11px;
+                max-width: 4.8em;
+            }
+
+            input[type=number] {
+                width: 3.2em;
+                padding: 1px 2px;
+                text-align: center;
+                -moz-appearance: textfield;
+                appearance: textfield;
+
+                &::-webkit-inner-spin-button,
+                &::-webkit-outer-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+            }
+        }
+    }
+
+    &__ledger {
+        .row {
+            .date {
+                font-variant-numeric: tabular-nums;
+            }
+
+            .days {
+                font-weight: 600;
+            }
+
+            .expires,
+            .note {
+                color: rgba(var(--center-channel-color-rgb), 0.5);
+                font-size: 10px;
+            }
+
+            .del {
+                margin-left: auto;
+                border: none;
+                background: transparent;
+                color: rgba(var(--center-channel-color-rgb), 0.4);
+                cursor: pointer;
+
+                &:hover {
+                    color: #e03131;
+                }
+            }
+
+            &.voided {
+                color: rgba(var(--center-channel-color-rgb), 0.35);
+                text-decoration: line-through;
+            }
+        }
+
+        .empty {
+            color: rgba(var(--center-channel-color-rgb), 0.5);
+            text-align: center;
+        }
+    }
+}

@@ -5,6 +5,7 @@ import React, {useState} from 'react'
 import {useIntl} from 'react-intl'
 
 import {PropertyType} from '../../properties/types'
+import {getDueStatusFilterOptions} from '../../properties/dueStatus/property'
 import {IPropertyTemplate} from '../../blocks/board'
 import {FilterClause} from '../../blocks/filterClause'
 import {createFilterGroup} from '../../blocks/filterGroup'
@@ -20,6 +21,37 @@ import DateFilter from './dateFilter'
 
 import './filterValue.scss'
 import MultiPersonFilterValue from './multipersonFilterValue'
+
+type DaysFilterProps = {
+    view: BoardView
+    filter: FilterClause
+}
+
+const DaysFilterValue = (props: DaysFilterProps): JSX.Element => {
+    const {view, filter} = props
+    const intl = useIntl()
+    const [value, setValue] = useState(filter.values.length > 0 ? filter.values[0] : '7')
+
+    return (
+        <Editable
+            value={value}
+            onChange={setValue}
+            placeholderText={intl.formatMessage({id: 'Filter.days', defaultMessage: 'days'})}
+            onSave={() => {
+                const filterIndex = view.fields.filter.filters.indexOf(filter)
+                Utils.assert(filterIndex >= 0, "Can't find filter")
+
+                const filterGroup = createFilterGroup(view.fields.filter)
+                const newFilter = filterGroup.filters[filterIndex] as FilterClause
+                Utils.assert(newFilter, `No filter at index ${filterIndex}`)
+
+                const days = parseInt(value, 10)
+                newFilter.values = [Number.isNaN(days) || days < 0 ? '7' : days.toString()]
+                mutator.changeViewFilter(view.boardId, view.id, view.fields.filter, filterGroup)
+            }}
+        />
+    )
+}
 
 type Props = {
     view: BoardView
@@ -75,8 +107,17 @@ const filterValue = (props: Props): JSX.Element|null => {
         )
     }
     if (propertyType.filterValueType === 'date') {
-        if (filter.condition === 'isSet' || filter.condition === 'isNotSet') {
+        if (filter.condition === 'isSet' || filter.condition === 'isNotSet' || filter.condition === 'isOverdue') {
             return null
+        }
+
+        if (filter.condition === 'isWithinDays') {
+            return (
+                <DaysFilterValue
+                    view={view}
+                    filter={filter}
+                />
+            )
         }
 
         return (
@@ -87,10 +128,12 @@ const filterValue = (props: Props): JSX.Element|null => {
         )
     }
 
+    const options = template?.type === 'dueStatus' ? getDueStatusFilterOptions(intl) : template?.options
+
     let displayValue: string
     if (filter.values.length > 0) {
         displayValue = filter.values.map((id) => {
-            const option = template?.options.find((o) => o.id === id)
+            const option = options?.find((o) => o.id === id)
             return option?.value || '(Unknown)'
         }).join(', ')
     } else {
@@ -102,7 +145,7 @@ const filterValue = (props: Props): JSX.Element|null => {
             <Button>{displayValue}</Button>
 
             <Menu>
-                {template?.options.map((o) => (
+                {options?.map((o) => (
                     <Menu.Switch
                         key={o.id}
                         id={o.id}

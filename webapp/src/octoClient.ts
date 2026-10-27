@@ -4,7 +4,7 @@ import {Block, BlockPatch, FileInfo} from './blocks/block'
 import {Board, BoardsAndBlocks, BoardsAndBlocksPatch, BoardPatch, BoardMember} from './blocks/board'
 import {ISharing} from './blocks/sharing'
 import {OctoUtils} from './octoUtils'
-import {IUser, UserConfigPatch, UserPreference} from './user'
+import {AdminUser, IUser, UserConfigPatch, UserPreference} from './user'
 import {Utils} from './utils'
 import {ClientConfig} from './config/clientConfig'
 import {UserSettings} from './userSettings'
@@ -16,6 +16,8 @@ import {PrepareOnboardingResponse} from './onboardingTour'
 import {Constants} from './constants'
 
 import {BoardsCloudLimits} from './boardsCloudLimits'
+import {DueCard, DueReminderSettings, TopBarCalendar, TopBarGreeting} from './dueReminder'
+import {LeaveSettings, LeaveSummary, LunarDay} from './leaves'
 import {TopBoardResponse} from './insights'
 import {BoardSiteStatistics} from './statistics'
 
@@ -729,6 +731,227 @@ class OctoClient {
     async getTeamTemplates(teamId?: string): Promise<Board[]> {
         const path = this.teamPath(teamId) + '/templates'
         return this.getBoardsWithPath(path)
+    }
+
+    async getDueReminders(leadDays: number): Promise<DueCard[]> {
+        const response = await fetch(this.getBaseURL() + `/api/v2/due-reminders?leadDays=${leadDays}`, {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return []
+        }
+        return this.getJson<DueCard[]>(response, [])
+    }
+
+    async getPendingDueCards(): Promise<DueCard[]> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/due-reminders/pending', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return []
+        }
+        return this.getJson<DueCard[]>(response, [])
+    }
+
+    async getDueReminderSettings(): Promise<DueReminderSettings | undefined> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/due-reminders/settings', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return undefined
+        }
+        return this.getJson<DueReminderSettings>(response, undefined as any)
+    }
+
+    async getTopBarGreeting(): Promise<TopBarGreeting | undefined> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/top-bar', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return undefined
+        }
+        return this.getJson<TopBarGreeting>(response, undefined as any)
+    }
+
+    async getTopBarCalendar(): Promise<TopBarCalendar | undefined> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/top-bar/calendar', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return undefined
+        }
+        return this.getJson<TopBarCalendar>(response, undefined as any)
+    }
+
+    async getTopBarLunar(year: number): Promise<LunarDay[]> {
+        const response = await fetch(this.getBaseURL() + `/api/v2/top-bar/lunar?year=${year}`, {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return []
+        }
+        const data = await response.json() as {year: number, days: LunarDay[]}
+        return data.days || []
+    }
+
+    async getLeaveSummary(): Promise<LeaveSummary | undefined> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/leaves/summary', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return undefined
+        }
+        return this.getJson<LeaveSummary>(response, undefined as any)
+    }
+
+    async addLeaveRecord(record: {kind: string, action: string, date: string, days: number, note?: string}): Promise<{error?: string, id?: string}> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/leaves/records', {
+            method: 'POST',
+            headers: this.headers(),
+            body: JSON.stringify(record),
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            try {
+                return {error: JSON.parse(text).error || '记录失败'}
+            } catch {
+                return {error: text || '记录失败'}
+            }
+        }
+        const data = await response.json() as {id: string}
+        return {id: data.id}
+    }
+
+    async deleteLeaveRecord(id: string): Promise<boolean> {
+        const response = await fetch(this.getBaseURL() + `/api/v2/leaves/records/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: this.headers(),
+        })
+        return response.status === 200
+    }
+
+    async updateLeaveSettings(settings: LeaveSettings): Promise<LeaveSettings | undefined> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/leaves/settings', {
+            method: 'PUT',
+            headers: this.headers(),
+            body: JSON.stringify(settings),
+        })
+        if (response.status !== 200) {
+            return undefined
+        }
+        return this.getJson<LeaveSettings>(response, undefined as any)
+    }
+
+    async downloadLeaveExport(): Promise<boolean> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/leaves/export', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return false
+        }
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `假勤记录-${new Date().getFullYear()}.txt`
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+        return true
+    }
+
+    async setDueDateProperty(boardId: string, propertyId: string): Promise<void> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/due-reminders/date-property', {
+            headers: this.headers(),
+            method: 'POST',
+            body: JSON.stringify({boardId, propertyId}),
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
+    }
+
+    async setPendingDateProperty(boardId: string, propertyId: string): Promise<void> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/due-reminders/pending-date-property', {
+            headers: this.headers(),
+            method: 'POST',
+            body: JSON.stringify({boardId, propertyId}),
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
+    }
+
+    async testDueReminder(): Promise<void> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/due-reminders/test', {
+            headers: this.headers(),
+            method: 'POST',
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
+    }
+
+    async sendDueReminderNow(): Promise<number> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/due-reminders/send-now', {
+            headers: this.headers(),
+            method: 'POST',
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
+        const data = await response.json() as {count?: number}
+        return data.count || 0
+    }
+
+    async getAdminUsers(): Promise<AdminUser[]> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/admin/users', {
+            headers: this.headers(),
+        })
+        if (response.status !== 200) {
+            return []
+        }
+        return this.getJson<AdminUser[]>(response, [])
+    }
+
+    async adminCreateUser(username: string, email: string, password: string): Promise<void> {
+        const response = await fetch(this.getBaseURL() + '/api/v2/admin/users', {
+            headers: this.headers(),
+            method: 'POST',
+            body: JSON.stringify({username, email, password}),
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
+    }
+
+    async adminSetUserPassword(userID: string, password: string): Promise<void> {
+        const response = await fetch(this.getBaseURL() + `/api/v2/admin/users/${encodeURIComponent(userID)}/password`, {
+            headers: this.headers(),
+            method: 'PUT',
+            body: JSON.stringify({password}),
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
+    }
+
+    async adminDeleteUser(userID: string): Promise<void> {
+        const response = await fetch(this.getBaseURL() + `/api/v2/admin/users/${encodeURIComponent(userID)}`, {
+            headers: this.headers(),
+            method: 'DELETE',
+        })
+        if (response.status !== 200) {
+            const text = await response.text()
+            throw new Error(text || 'request failed')
+        }
     }
 
     async getBoards(): Promise<Board[]> {

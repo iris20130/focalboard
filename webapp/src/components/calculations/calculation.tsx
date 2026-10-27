@@ -5,7 +5,7 @@ import {useIntl} from 'react-intl'
 
 import {Card} from '../../blocks/card'
 
-import {IPropertyTemplate} from '../../blocks/board'
+import {Board, IPropertyTemplate} from '../../blocks/board'
 
 import ChevronUp from '../../widgets/icons/chevronUp'
 
@@ -28,6 +28,7 @@ type Props = {
     onChange: (value: string) => void
     cards: readonly Card[]
     property: IPropertyTemplate
+    board?: Board
     hovered: boolean
     optionsComponent: React.ComponentType<CommonCalculationOptionProps>
 }
@@ -81,7 +82,7 @@ const Calculation = (props: Props): JSX.Element => {
             {
                 value !== Options.none.value &&
                 <span className='calculationValue'>
-                    {Calculations[value] ? Calculations[value](props.cards, props.property, intl) : ''}
+                    {Calculations[value] ? Calculations[value](props.cards, props.property, intl, props.board) : ''}
                 </span>
             }
 

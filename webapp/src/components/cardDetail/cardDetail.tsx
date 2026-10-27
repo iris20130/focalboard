@@ -46,6 +46,16 @@ import './cardDetail.scss'
 
 export const OnboardingBoardTitle = 'Welcome to Boards!'
 export const OnboardingCardTitle = 'Create a new card'
+export const OnboardingBoardTitleZH = '欢迎使用看板！'
+export const OnboardingCardTitleZH = '创建新卡片'
+
+export const isOnboardingBoardTitle = (title: string): boolean => (
+    title === OnboardingBoardTitle || title === OnboardingBoardTitleZH
+)
+
+export const isOnboardingCardTitle = (title: string): boolean => (
+    title === OnboardingCardTitle || title === OnboardingCardTitleZH
+)
 
 type Props = {
     board: Board

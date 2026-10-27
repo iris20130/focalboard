@@ -74,3 +74,8 @@ server/vendor
 docker/certs
 docker/data
 server/**/*.coverage
+
+# Mobile signing
+mobile/keystore.properties
+*.keystore
+*.jks

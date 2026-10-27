@@ -10,6 +10,7 @@ import Button from '../widgets/buttons/button'
 import './errorPage.scss'
 
 import {errorDefFromId, ErrorId} from '../errors'
+import {Utils} from '../utils'
 
 const ErrorPage = () => {
     const history = useHistory()
@@ -45,7 +46,7 @@ const ErrorPage = () => {
         )
     })
 
-    if (errid === ErrorId.NotLoggedIn) {
+    if (!Utils.isFocalboardPlugin() && errid === ErrorId.NotLoggedIn) {
         handleButtonClick(errorDef.button1Redirect)
     }
 
