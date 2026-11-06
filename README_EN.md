@@ -8,6 +8,14 @@ On top of the upstream kanban features, this edition adds **due-date reminders (
 
 ---
 
+## Screenshots
+
+![Board view with the reminder sidebar](docs/screenshots/board.png)
+
+> Board view: top date bar, workflow swimlanes, due-date reminder sidebar and push settings. More screenshots will be added later.
+
+---
+
 ## Features (built for Chinese overtime culture)
 
 ### Boards and views
@@ -78,14 +86,6 @@ Full guide: [Docker guide (EN)](docs/delivery/DockerGuide_EN.md) ｜ [Docker 部
 4. To switch servers, clear the app data from the settings tab and enter a new address
 
 Full guide: [手机 APP 使用说明](docs/delivery/手机APP使用说明.md)
-
----
-
-## Screenshots
-
-![Board view with the reminder sidebar](docs/screenshots/board.png)
-
-> Board view: top date bar, workflow swimlanes, due-date reminder sidebar and push settings. More screenshots will be added later.
 
 ---
 
