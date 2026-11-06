@@ -4,7 +4,7 @@
 
 基于 [Mattermost Focalboard](https://github.com/mattermost/focalboard) v8.0.0 源码定制的**局域网多人看板系统**，面向内网团队协作：双击即用、数据自持、不需要公网账号体系。
 
-除了原版看板能力，定制版增加了**到期提醒（右栏 + 多渠道推送）**、**假勤助手（年假 / 调休）**、**工作日工时属性**、**顶部日期提示栏**、**工作流泳道**、**手机 APP 外壳**等，并提供 Windows 免安装包、Docker 镜像和 Android APK 三种交付形态。
+除了原版看板能力，定制版增加了**到期提醒（右栏 + 多渠道推送）**、**假勤助手（年假 / 调休）**、**工作日工时属性**、**顶部日期提示栏**、**工作流泳道**、**手机 APP 外壳**等，并提供 **Windows 免安装包**、**Windows 任务栏日历**、**Docker 镜像** 和 **Android APK** 四种交付形态。
 
 ---
 
@@ -33,6 +33,7 @@
 - 顶部日期条：公历、星期、干支纪年、农历、假勤徽标；左键弹窗、右键钉住假勤月历
 - 提示栏单行滚动语录，语录在 `quotes.txt` 中维护，分 [idle]/[busy] 两节，改完刷新即生效
 - 中英文界面、托盘常驻、开机静默自启、防火墙一键放行
+- **Windows 任务栏日历**：独立托盘小工具，点击任务栏图标直接弹出假勤助手月历；内嵌网页登录并记住会话，断网显示上次同步记录、联网自动同步
 
 ### 多用户与数据
 - 内置账号登录，**首个注册账号自动成为管理员**；邀请链接注册
@@ -47,7 +48,8 @@
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| Windows（免安装） | `Focalboard-Windows-8.0.0-lan-20261026.zip` | 解压后双击 `Focalboard.exe` 即可，无需管理员权限 |
+| Windows（免安装） | `Focalboard-Windows-8.0.0-lan-20261106.zip` | 解压后双击 `Focalboard.exe` 即可，无需管理员权限 |
+| Windows 任务栏日历 | `FocalboardCalendar-1.0.0-win.zip` | 独立托盘小工具，点击任务栏图标弹出假勤月历（Windows 包 `calendar\` 内也附带一份） |
 | Linux / Docker | `focalboard-docker-8.0.0-lan-20261026.tar.gz` | 预构建镜像 + compose 配置 + 配置样例 |
 | Android | `FocalboardMobile-1.1.0.apk` | 手机 APP 外壳，支持 Android 8.0+ |
 
@@ -61,6 +63,17 @@
 > 端口固定 8088，配置文件 `config.json`（支持 `//` 注释）。
 
 详细说明：[Windows 使用说明](docs/delivery/使用说明.txt) ｜ [User Guide (EN)](docs/delivery/UserGuide_EN.txt)
+
+### Windows 任务栏日历
+Windows 包内 `calendar\` 目录（或单独下载 `FocalboardCalendar-1.0.0-win.zip`）：
+
+1. 运行 `FocalboardCalendar.exe`，托盘出现日历图标
+2. 右键托盘 →「设置服务器地址」，填写 Focalboard 地址（如 `http://192.168.1.100:8088`）
+3. 点击托盘图标弹出假勤助手，首次在弹窗内登录，之后免登录
+4. 断网时自动显示上次同步的本地记录，恢复联网后自动同步
+
+> 需要 Microsoft Edge WebView2 Runtime（Win10/11 一般已内置）。
+> 详细说明：[任务栏日历使用说明](docs/delivery/任务栏日历使用说明.txt) ｜ 源码与构建：[windows-calendar/README.md](windows-calendar/README.md)
 
 ### Docker 快速开始
 ```bash
@@ -89,6 +102,7 @@ docker compose up -d          # 使用包内 compose 与配置
 |---|---|
 | 看板主界面 + 右侧提醒栏（含顶部日期条） | `docs/screenshots/board.png` |
 | 假勤月历弹窗 / 钉住面板（含节气与流水） | `docs/screenshots/leave-calendar.png` |
+| Windows 任务栏假勤日历 | `docs/screenshots/windows-calendar.png` |
 | 提醒设置齿轮面板（推送 + 按看板属性） | `docs/screenshots/reminder-settings.png` |
 | 手机 APP：看板 / 日历假勤 / 提醒设置三页拼图 | `docs/screenshots/mobile.png` |
 
@@ -102,6 +116,7 @@ docker compose up -d          # 使用包内 compose 与配置
 ├── webapp/              # React + TypeScript 前端（含定制组件：dueLayout、leaveCalendar…）
 ├── mattermost-plugin/   # Mattermost 集成插件（上游）
 ├── launcher/            # Windows 托盘启动器源码（C#）
+├── windows-calendar/    # Windows 任务栏假勤日历源码（C# + WebView2）
 ├── mobile/              # Android APP 源码（Kotlin WebView 外壳）
 ├── docs/delivery/       # 交付文档：Windows / Docker / APP 使用说明（中英文）
 ├── docker/              # Docker 构建文件（上游）
@@ -128,6 +143,7 @@ go build -ldflags "-X github.com/mattermost/focalboard/server/model.Edition=dev"
 
 - 模板归档：`make templates-archive`（英文）/ `make templates-archive-zh`（中文）
 - 托盘启动器：见 [launcher/README.md](launcher/README.md)
+- 任务栏日历：见 [windows-calendar/README.md](windows-calendar/README.md)（`build.bat`，需 .NET Framework 4.8）
 - 手机 APP：见 [mobile/README.md](mobile/README.md)
 
 ## 配置要点
